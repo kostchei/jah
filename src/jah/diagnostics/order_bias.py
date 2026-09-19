@@ -78,7 +78,9 @@ def _compile(
     )[0]
 
 
-def _run_variants(backend, variants, baseline_predictions, minimum_label_mass: float) -> dict:
+def _run_variants(
+    backend, variants, baseline_predictions, minimum_label_mass: float, batch_size: int = 8
+) -> dict:
     rows = []
     label_masses = []
     probability_by_letter: dict[str, list[float]] = defaultdict(list)
@@ -86,12 +88,22 @@ def _run_variants(backend, variants, baseline_predictions, minimum_label_mass: f
     predicted_letters = Counter()
     cache = {}
 
+    unique_questions = {}
     for variant in variants:
         question = variant["question"]
-        measurement = cache.get(question.prompt)
-        if measurement is None:
-            measurement = backend.score(question)
-            cache[question.prompt] = measurement
+        unique_questions.setdefault(question.prompt, question)
+    unique_items = list(unique_questions.items())
+    for start in range(0, len(unique_items), batch_size):
+        batch = unique_items[start : start + batch_size]
+        measurements = backend.score_batch([question for _, question in batch])
+        cache.update(
+            (prompt, measurement)
+            for (prompt, _), measurement in zip(batch, measurements, strict=True)
+        )
+
+    for variant in variants:
+        question = variant["question"]
+        measurement = cache[question.prompt]
         label_masses.append((variant["variant_id"], measurement.label_mass))
         letter_probabilities = {}
         predicted_letter = None
@@ -131,6 +143,8 @@ def _run_variants(backend, variants, baseline_predictions, minimum_label_mass: f
     return {
         "cases": len(rows),
         "unique_forward_passes": len(cache),
+        "forward_batches": (len(cache) + batch_size - 1) // batch_size,
+        "microbatch_size": batch_size,
         "accuracy": sum(r == p for r, p in zip(references, predictions, strict=True)) / len(rows),
         "macro_f1": _macro_f1(references, predictions, labels),
         "predicted_class_counts": dict(sorted(Counter(predictions).items())),

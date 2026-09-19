@@ -76,3 +76,56 @@ class HuggingFaceDirectLogitBackend:
             input_tokens=int(encoded["input_ids"].shape[-1]),
             peak_vram_bytes=int(peak),
         )
+
+    def score_batch(self, questions: list[CompiledQuestion]) -> tuple[InferenceMeasurement, ...]:
+        if not questions:
+            return ()
+        if any(question.label_token_ids is None for question in questions):
+            raise ValueError("compiled question is missing tokenizer-verified label token IDs")
+
+        torch = self.torch
+        previous_padding_side = self.tokenizer.padding_side
+        self.tokenizer.padding_side = "right"
+        try:
+            encoded = self.tokenizer(
+                [question.prompt for question in questions],
+                return_tensors="pt",
+                add_special_tokens=False,
+                padding=True,
+            )
+        finally:
+            self.tokenizer.padding_side = previous_padding_side
+        encoded = {key: value.to(self.device) for key, value in encoded.items()}
+        if self.device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(self.device)
+            torch.cuda.synchronize(self.device)
+        started = time.perf_counter()
+        with torch.inference_mode():
+            outputs = self.model(**encoded, use_cache=False, return_dict=True)
+        if self.device.type == "cuda":
+            torch.cuda.synchronize(self.device)
+        batch_inference_ms = (time.perf_counter() - started) * 1_000
+        final_logits = last_unpadded_logits(outputs.logits, encoded["attention_mask"])
+        peak = torch.cuda.max_memory_allocated(self.device) if self.device.type == "cuda" else 0
+        per_decision_ms = batch_inference_ms / len(questions)
+        measurements = []
+        for index, question in enumerate(questions):
+            label_token_ids = question.label_token_ids
+            if label_token_ids is None:  # pragma: no cover - guarded above
+                raise AssertionError("label token IDs unexpectedly missing")
+            final = final_logits[index]
+            measurements.append(
+                InferenceMeasurement(
+                    decision=score_option_logits(
+                        final,
+                        option_ids=question.option_ids,
+                        label_token_ids=label_token_ids,
+                        option_values=question.option_values,
+                    ),
+                    label_mass=label_probability_mass(final, label_token_ids),
+                    inference_ms=per_decision_ms,
+                    input_tokens=int(encoded["attention_mask"][index].sum().item()),
+                    peak_vram_bytes=int(peak),
+                )
+            )
+        return tuple(measurements)
