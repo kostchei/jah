@@ -92,14 +92,19 @@ def _run_variants(
     for variant in variants:
         question = variant["question"]
         unique_questions.setdefault(question.prompt, question)
-    unique_items = list(unique_questions.items())
-    for start in range(0, len(unique_items), batch_size):
-        batch = unique_items[start : start + batch_size]
-        measurements = backend.score_batch([question for _, question in batch])
-        cache.update(
-            (prompt, measurement)
-            for (prompt, _), measurement in zip(batch, measurements, strict=True)
-        )
+    questions_by_length = defaultdict(list)
+    for prompt, question in unique_questions.items():
+        questions_by_length[question.input_tokens].append((prompt, question))
+    forward_batches = 0
+    for same_length_items in questions_by_length.values():
+        for start in range(0, len(same_length_items), batch_size):
+            batch = same_length_items[start : start + batch_size]
+            measurements = backend.score_batch([question for _, question in batch])
+            cache.update(
+                (prompt, measurement)
+                for (prompt, _), measurement in zip(batch, measurements, strict=True)
+            )
+            forward_batches += 1
 
     for variant in variants:
         question = variant["question"]
@@ -143,7 +148,7 @@ def _run_variants(
     return {
         "cases": len(rows),
         "unique_forward_passes": len(cache),
-        "forward_batches": (len(cache) + batch_size - 1) // batch_size,
+        "forward_batches": forward_batches,
         "microbatch_size": batch_size,
         "accuracy": sum(r == p for r, p in zip(references, predictions, strict=True)) / len(rows),
         "macro_f1": _macro_f1(references, predictions, labels),
@@ -260,7 +265,7 @@ def run(args: argparse.Namespace) -> int:
         backend.score(baseline_variants[warmup_index]["question"])
     minimum_label_mass = workload["provisional_feasibility_gate"]["minimum_label_mass"]
     empty_baseline = {example.example_id: "" for example in examples}
-    r0 = _run_variants(backend, baseline_variants, empty_baseline, minimum_label_mass)
+    r0 = _run_variants(backend, baseline_variants, empty_baseline, minimum_label_mass, batch_size=1)
     baseline_predictions = {row["example_id"]: row["prediction"] for row in r0["rows"]}
     r0["label_aligned_flip_rate_vs_r0"] = 0.0
 
@@ -290,10 +295,26 @@ def run(args: argparse.Namespace) -> int:
         ),
     }
     runs = {"R0": r0}
-    for run_name, compiler in compilers.items():
+    runs["R1"] = _run_variants(
+        backend,
+        _variants(examples, compilers["R1"], "R1"),
+        baseline_predictions,
+        minimum_label_mass,
+    )
+    rotation_zero_mismatches = [
+        row["example_id"]
+        for row in runs["R1"]["rows"]
+        if row["rotation"] == 0 and row["prediction"] != baseline_predictions[row["example_id"]]
+    ]
+    if rotation_zero_mismatches:
+        raise RuntimeError(
+            "microbatch scoring changed unrotated baseline predictions for: "
+            + ", ".join(rotation_zero_mismatches)
+        )
+    for run_name in ("R2", "R3", "R4"):
         runs[run_name] = _run_variants(
             backend,
-            _variants(examples, compiler, run_name),
+            _variants(examples, compilers[run_name], run_name),
             baseline_predictions,
             minimum_label_mass,
         )
