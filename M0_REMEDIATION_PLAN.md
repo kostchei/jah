@@ -159,5 +159,5 @@ The independent human pass runs in parallel and does not block the merge. It mus
 - [x] Boolean complement and Score expected-value tests pass
 - [x] Platform deviation noted
 - [x] Evidence regenerated from source commit `b79fc7df9943bafce5a0ca558ed0278113b0c688` and SHA recorded
-- [ ] `m0` merged to `main`
+- [x] `m0` merged to `main` as `46046b5`
 - [ ] Independent human pass complete or scheduled with a named annotator
