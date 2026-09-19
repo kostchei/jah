@@ -6,12 +6,18 @@ import time
 from dataclasses import dataclass
 
 from jah.compiler import CompiledQuestion
-from jah.scoring import ScoredDecision, last_unpadded_logits, score_option_logits
+from jah.scoring import (
+    ScoredDecision,
+    label_probability_mass,
+    last_unpadded_logits,
+    score_option_logits,
+)
 
 
 @dataclass(frozen=True)
 class InferenceMeasurement:
     decision: ScoredDecision
+    label_mass: float
     inference_ms: float
     input_tokens: int
     peak_vram_bytes: int
@@ -61,9 +67,11 @@ class HuggingFaceDirectLogitBackend:
             label_token_ids=question.label_token_ids,
             option_values=question.option_values,
         )
+        label_mass = label_probability_mass(final, question.label_token_ids)
         peak = torch.cuda.max_memory_allocated(self.device) if self.device.type == "cuda" else 0
         return InferenceMeasurement(
             decision=decision,
+            label_mass=label_mass,
             inference_ms=inference_ms,
             input_tokens=int(encoded["input_ids"].shape[-1]),
             peak_vram_bytes=int(peak),

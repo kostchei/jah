@@ -8,8 +8,8 @@ from typing import Any, Protocol
 
 from jah.schemas import BooleanQuestion, ChoiceQuestion, EvaluateRequest, ScoreQuestion
 
-LABELS = tuple(f" {chr(ord('A') + index)}" for index in range(16))
-PROMPT_VERSION = "decision-prompt-v1"
+LABELS = tuple(chr(ord("A") + index) for index in range(16))
+PROMPT_VERSION = "decision-prompt-v2"
 
 
 class Tokenizer(Protocol):

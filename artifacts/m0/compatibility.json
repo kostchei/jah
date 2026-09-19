@@ -1,8 +1,8 @@
 {
-  "created_at": "2026-09-19T15:06:04.384519+00:00",
+  "created_at": "2026-09-19T17:19:15.589445+00:00",
   "dataset": {
     "annotation_status_counts": {
-      "adjudicated-agreement": 50
+      "single-author-two-pass": 50
     },
     "examples": 50,
     "label_counts": {
@@ -12,7 +12,7 @@
       "technical": 13
     },
     "path": "evals/data/support-routing-m0.jsonl",
-    "sha256": "70ce9a78806a022f2aa0c2ecc1fd486575115a7e9c0a99d13f88e9220d5b041e"
+    "sha256": "8819606909be0e289fffb2908de1863ce9a3bbf3304659e1c74b80f27d13dc35"
   },
   "environment": {
     "cuda_available": true,
@@ -31,18 +31,314 @@
     "torch": "2.10.0+cu128",
     "transformers": "5.17.0"
   },
-  "evidence_sha256": "5a8ff2f03f35a6f1a40e48372c050ca9cf1f5120d0919e1b5d0269333f098b58",
+  "evidence_sha256": "c1fb89de976ee84b190f2b9677a9c102c1c01750a005008786d081de8d3e6039",
   "inference": {
-    "accuracy": 0.74,
+    "accuracy": 0.76,
+    "cold_start_ms": 658.2618000102229,
     "decisions": 50,
     "feasibility_gate_passed": true,
-    "macro_f1": 0.7517339176378077,
+    "gpu_compute_apps_after": [
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "12000",
+        "process_name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "14860",
+        "process_name": "C:\\Program Files\\NVIDIA Corporation\\NVIDIA app\\CEF\\NVIDIA Overlay.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "14140",
+        "process_name": "C:\\Windows\\explorer.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16924",
+        "process_name": "C:\\Windows\\SystemApps\\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\\StartMenuExperienceHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16888",
+        "process_name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\SearchHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "20104",
+        "process_name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.32\\msedgewebview2.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16824",
+        "process_name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "2724",
+        "process_name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16604",
+        "process_name": "C:\\Program Files\\WindowsApps\\Microsoft.ZuneVideo_10.26061.10051.0_x64__8wekyb3d8bbwe\\Video.UI.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "30216",
+        "process_name": "C:\\Program Files\\WindowsApps\\Microsoft.Edge.GameAssist_1.0.4019.0_x64__8wekyb3d8bbwe\\EdgeGameAssist.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "30332",
+        "process_name": "C:\\Program Files\\WindowsApps\\SpotifyAB.SpotifyMusic_1.301.234.0_x64__zpdnekdrzrea0\\SpotifyXboxGamebarWebView.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "31108",
+        "process_name": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "32012",
+        "process_name": "C:\\Program Files\\WindowsApps\\Microsoft.YourPhone_1.26072.255.0_x64__8wekyb3d8bbwe\\PhoneExperienceHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "22440",
+        "process_name": "C:\\Users\\Admin\\AppData\\Local\\Discord\\app-1.0.9258\\Discord.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "3868",
+        "process_name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.915.4065.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16332",
+        "process_name": "C:\\Users\\Admin\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\df473e5367fa2b42\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "32940",
+        "process_name": "C:\\Windows\\System32\\ApplicationFrameHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "24184",
+        "process_name": "C:\\Program Files\\WindowsApps\\RealtekSemiconductorCorp.RealtekAudioControl_1.51.352.0_x64__dt26b99r8h8gj\\RtkUWP.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "27688",
+        "process_name": "C:\\Windows\\System32\\ShellHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "21552",
+        "process_name": "C:\\Program Files\\ExpressVPN\\expressvpn-client.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "12836",
+        "process_name": "C:\\Program Files\\NVIDIA Corporation\\NVIDIA app\\CEF\\NVIDIA Overlay.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "15452",
+        "process_name": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "6200",
+        "process_name": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "34316",
+        "process_name": "C:\\Users\\Admin\\AppData\\Roaming\\uv\\python\\cpython-3.12.9-windows-x86_64-none\\python.exe",
+        "used_memory_mib": "[N/A]"
+      }
+    ],
+    "gpu_compute_apps_before": [
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "12000",
+        "process_name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "14860",
+        "process_name": "C:\\Program Files\\NVIDIA Corporation\\NVIDIA app\\CEF\\NVIDIA Overlay.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "14140",
+        "process_name": "C:\\Windows\\explorer.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16924",
+        "process_name": "C:\\Windows\\SystemApps\\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\\StartMenuExperienceHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16888",
+        "process_name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\SearchHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "20104",
+        "process_name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.32\\msedgewebview2.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16824",
+        "process_name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "2724",
+        "process_name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16604",
+        "process_name": "C:\\Program Files\\WindowsApps\\Microsoft.ZuneVideo_10.26061.10051.0_x64__8wekyb3d8bbwe\\Video.UI.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "30216",
+        "process_name": "C:\\Program Files\\WindowsApps\\Microsoft.Edge.GameAssist_1.0.4019.0_x64__8wekyb3d8bbwe\\EdgeGameAssist.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "30332",
+        "process_name": "C:\\Program Files\\WindowsApps\\SpotifyAB.SpotifyMusic_1.301.234.0_x64__zpdnekdrzrea0\\SpotifyXboxGamebarWebView.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "31108",
+        "process_name": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "32012",
+        "process_name": "C:\\Program Files\\WindowsApps\\Microsoft.YourPhone_1.26072.255.0_x64__8wekyb3d8bbwe\\PhoneExperienceHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "22440",
+        "process_name": "C:\\Users\\Admin\\AppData\\Local\\Discord\\app-1.0.9258\\Discord.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "3868",
+        "process_name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.915.4065.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "16332",
+        "process_name": "C:\\Users\\Admin\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\df473e5367fa2b42\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "32940",
+        "process_name": "C:\\Windows\\System32\\ApplicationFrameHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "24184",
+        "process_name": "C:\\Program Files\\WindowsApps\\RealtekSemiconductorCorp.RealtekAudioControl_1.51.352.0_x64__dt26b99r8h8gj\\RtkUWP.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "27688",
+        "process_name": "C:\\Windows\\System32\\ShellHost.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "21552",
+        "process_name": "C:\\Program Files\\ExpressVPN\\expressvpn-client.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "12836",
+        "process_name": "C:\\Program Files\\NVIDIA Corporation\\NVIDIA app\\CEF\\NVIDIA Overlay.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "15452",
+        "process_name": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "6200",
+        "process_name": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "used_memory_mib": "[N/A]"
+      },
+      {
+        "gpu_uuid": "GPU-e2850ae9-b448-60e7-46b7-22341aaa0f34",
+        "pid": "34316",
+        "process_name": "C:\\Users\\Admin\\AppData\\Roaming\\uv\\python\\cpython-3.12.9-windows-x86_64-none\\python.exe",
+        "used_memory_mib": "[N/A]"
+      }
+    ],
+    "macro_f1": 0.773343685300207,
     "majority_accuracy": 0.26,
-    "margin_over_majority": 0.48,
-    "median_inference_ms": 108.86699999537086,
-    "model_load_ms": 22443.619499987108,
-    "p95_inference_ms": 9599.23649999837,
-    "peak_vram_bytes": 9317040128,
+    "margin_over_majority": 0.5,
+    "median_inference_ms": 154.74829999584472,
+    "median_label_mass": 0.9408516585826874,
+    "minimum_label_mass": 0.6404544711112976,
+    "minimum_label_mass_gate": 0.5,
+    "model_load_ms": 12964.716300004511,
+    "p95_inference_ms": 177.38449999887962,
+    "peak_vram_bytes": 9317426688,
     "per_label": {
       "account": {
         "correct": 9,
@@ -60,68 +356,77 @@
       },
       "other": {
         "correct": 12,
-        "f1": 0.6486486486486487,
-        "precision": 0.48,
+        "f1": 0.6666666666666666,
+        "precision": 0.5,
         "recall": 1.0,
         "support": 12
       },
       "technical": {
-        "correct": 6,
-        "f1": 0.631578947368421,
+        "correct": 7,
+        "f1": 0.7000000000000001,
         "precision": 1.0,
-        "recall": 0.46153846153846156,
+        "recall": 0.5384615384615384,
         "support": 13
       }
-    }
+    },
+    "warmup_forward_passes": 5,
+    "warmup_inference_ms": [
+      658.2618000102229,
+      217.64160000020638,
+      180.21769999177195,
+      178.94610000075772,
+      204.7920999902999
+    ]
   },
   "model": {
     "artifact_id": "qwen3.5-4b-m0",
     "device": "cuda",
-    "label_version": "latin-uppercase-v1",
+    "label_version": "latin-uppercase-bare-v2",
     "labels": [
-      " A",
-      " B",
-      " C",
-      " D",
-      " E",
-      " F",
-      " G",
-      " H",
-      " I",
-      " J",
-      " K",
-      " L",
-      " M",
-      " N",
-      " O",
-      " P"
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P"
     ],
     "license": "apache-2.0",
     "maximum_input_tokens": 8192,
     "model_class": "AutoModelForMultimodalLM",
     "model_id": "Qwen/Qwen3.5-4B",
     "precision": "bfloat16",
-    "prompt_version": "decision-prompt-v1",
+    "prompt_version": "decision-prompt-v2",
     "release_status": "m0-candidate",
     "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
     "schema_version": 1
   },
-  "model_config_sha256": "b84d8aac1dba27118c6f6aef239923798d384452f7bebbc61fc3ea4c8368e08e",
-  "predictions_sha256": "80b93c51f2583dc387f9af2ff4824668d70ef5d4bdfffd77882b1c93793db243",
+  "model_config_sha256": "730c408b091d08a2cf5977419597757ddfadd0315a5dbf1c6b0ddf971ce692e4",
+  "predictions_sha256": "18d38e1047432b3040730352fece170e1714202c9e86315ac57bc552fe6e2d33",
   "schema_version": 1,
+  "source_commit_sha": "b79fc7df9943bafce5a0ca558ed0278113b0c688",
   "status": "pass",
   "tokenizer": {
     "all_label_mappings_identical": true,
     "class": "Qwen2Tokenizer",
-    "load_ms": 1854.3155999941519,
+    "load_ms": 1978.5951999947429,
     "maximum_compiled_tokens": 254,
     "verified_label_token_ids": [
-      357,
-      417,
-      351,
-      414
+      32,
+      33,
+      34,
+      35
     ],
     "vocab_size": 248044
   },
-  "workload_config_sha256": "d5192a73674f70475a1724ab6c45d8f3039948a30f68a04033e9df90ffd9d842"
+  "workload_config_sha256": "75bc8b3d56bc5cabe7a31f567b7148a52aa1ad58f5ac1e0d2dc9b1d11ec0cd2d"
 }

@@ -24,9 +24,29 @@ options:
   - id: other
     description: No listed team applies, the request is general, or evidence is insufficient.
 dataset: evals/data/support-routing-m0.jsonl
-dataset_sha256: 70ce9a78806a022f2aa0c2ecc1fd486575115a7e9c0a99d13f88e9220d5b041e
+dataset_sha256: 8819606909be0e289fffb2908de1863ce9a3bbf3304659e1c74b80f27d13dc35
 split_policy: All 50 M0 examples are feasibility-only and must not enter the future locked test split.
 provisional_feasibility_gate:
   minimum_accuracy: 0.50
   minimum_margin_over_majority: 0.05
+  minimum_label_mass: 0.50
   maximum_prompt_tokens: 8192
+budgets:
+  m1_frozen_baseline:
+    maximum_development_runs: 20
+    maximum_prompt_versions: 10
+    maximum_direct_score_gpu_hours: 2
+    prompt_early_stop:
+      consecutive_non_improving_versions: 3
+      minimum_macro_f1_improvement: 0.01
+  m4_adapter_campaign:
+    maximum_trials: 12
+    maximum_gpu_hours: 24
+    maximum_gpu_hours_per_trial: 2
+    early_stop:
+      consecutive_non_improving_trials: 3
+      minimum_macro_f1_improvement_over_frozen: 0.01
+stop_conditions:
+  open_m4_below_development_macro_f1: 0.85
+  review_model_labels_and_workload_below_development_macro_f1: 0.75
+  stop_project_below_development_macro_f1_after_adapter: 0.85

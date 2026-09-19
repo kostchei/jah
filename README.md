@@ -9,11 +9,11 @@
 .venv\Scripts\python.exe -m pytest
 .venv\Scripts\ruff.exe check .
 .venv\Scripts\python.exe -m jah.compat
+.venv\Scripts\python.exe -m jah.diagnostics.order_bias
 ```
 
-The setup script creates an isolated Python 3.12 environment and installs the CUDA 12.8 PyTorch wheel. The compatibility command uses the pinned model revision, verifies answer labels at the real tokenizer boundary, loads the BF16 checkpoint on CUDA, evaluates all 50 M0 cases without calling `generate()`, and writes evidence under `artifacts/m0/`.
+The setup script creates an isolated Python 3.12 environment and installs the CUDA 12.8 PyTorch wheel. The compatibility command uses the pinned model revision, verifies answer labels at the real tokenizer boundary, loads the BF16 checkpoint on CUDA, evaluates all 50 M0 cases without calling `generate()`, and writes evidence under `artifacts/m0/`. The order-bias command runs the frozen M0 position/wording diagnostic and writes `artifacts/m0/order_bias.json`.
 
 The first model run downloads approximately 9.3 GB into the Hugging Face cache. Raw evaluation states are synthetic; no customer data is included.
 
 See [M0_RESULTS.md](M0_RESULTS.md) for the milestone decision and limitations.
-

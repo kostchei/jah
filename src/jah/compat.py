@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import platform
 import statistics
@@ -14,6 +15,7 @@ from pathlib import Path
 
 from jah.compiler import compile_request
 from jah.workload import (
+    git_commit_sha,
     load_dataset,
     load_yaml,
     sha256_file,
@@ -46,6 +48,50 @@ def _gpu_inventory() -> list[dict[str, str]]:
             }
         )
     return inventory
+
+
+def _gpu_compute_apps() -> list[dict[str, str]]:
+    command = [
+        "nvidia-smi",
+        "--query-compute-apps=gpu_uuid,pid,process_name,used_gpu_memory",
+        "--format=csv,noheader,nounits",
+    ]
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return []
+    applications = []
+    for row in csv.reader(result.stdout.splitlines()):
+        if len(row) != 4:
+            continue
+        gpu_uuid, pid, process_name, used_memory_mib = [item.strip() for item in row]
+        applications.append(
+            {
+                "gpu_uuid": gpu_uuid,
+                "pid": pid,
+                "process_name": process_name,
+                "used_memory_mib": used_memory_mib,
+            }
+        )
+    return applications
+
+
+def require_minimum_label_mass(
+    measurements: list[tuple[str, float]], minimum_label_mass: float
+) -> None:
+    if not 0.0 <= minimum_label_mass <= 1.0:
+        raise ValueError("minimum_label_mass must be between 0 and 1")
+    failures = [
+        (example_id, label_mass)
+        for example_id, label_mass in measurements
+        if label_mass < minimum_label_mass
+    ]
+    if failures:
+        preview = ", ".join(f"{example_id}={mass:.6f}" for example_id, mass in failures[:5])
+        suffix = "" if len(failures) <= 5 else f" (+{len(failures) - 5} more)"
+        raise RuntimeError(
+            f"label mass fell below minimum {minimum_label_mass:.3f}: {preview}{suffix}"
+        )
 
 
 def _macro_f1(references: list[str], predictions: list[str], labels: list[str]) -> float:
@@ -107,6 +153,7 @@ def run(args: argparse.Namespace) -> int:
 
     report: dict = {
         "schema_version": 1,
+        "source_commit_sha": git_commit_sha(root),
         "created_at": datetime.now(UTC).isoformat(),
         "status": "running",
         "environment": {
@@ -170,16 +217,25 @@ def run(args: argparse.Namespace) -> int:
         )
         model_load_ms = (time.perf_counter() - load_started) * 1_000
 
+        gpu_compute_apps_before = _gpu_compute_apps()
+        warmup_latencies = []
+        for warmup_index in range(5):
+            warmup = backend.score(compiled[warmup_index % len(compiled)])
+            warmup_latencies.append(warmup.inference_ms)
+        cold_start_ms = warmup_latencies[0]
+
         predictions = []
         references = []
         prediction_rows = []
         latencies = []
+        label_mass_measurements = []
         peak_vram_bytes = 0
         for example, question in zip(examples, compiled, strict=True):
             measurement = backend.score(question)
             predictions.append(measurement.decision.selected_id)
             references.append(example.reference_answer)
             latencies.append(measurement.inference_ms)
+            label_mass_measurements.append((example.example_id, measurement.label_mass))
             peak_vram_bytes = max(peak_vram_bytes, measurement.peak_vram_bytes)
             prediction_rows.append(
                 {
@@ -187,22 +243,31 @@ def run(args: argparse.Namespace) -> int:
                     "reference": example.reference_answer,
                     "prediction": measurement.decision.selected_id,
                     "probabilities": measurement.decision.probabilities,
+                    "label_mass": measurement.label_mass,
                     "input_tokens": measurement.input_tokens,
                     "inference_ms": measurement.inference_ms,
                 }
             )
+
+        gpu_compute_apps_after = _gpu_compute_apps()
 
         labels = [option["id"] for option in workload["options"]]
         accuracy = sum(r == p for r, p in zip(references, predictions)) / len(references)
         majority = max(Counter(references).values()) / len(references)
         macro_f1 = _macro_f1(references, predictions, labels)
         gate = workload["provisional_feasibility_gate"]
+        minimum_label_mass = gate["minimum_label_mass"]
+        require_minimum_label_mass(label_mass_measurements, minimum_label_mass)
+        label_masses = [label_mass for _, label_mass in label_mass_measurements]
         feasible = (
             accuracy >= gate["minimum_accuracy"]
             and accuracy - majority >= gate["minimum_margin_over_majority"]
         )
         report["inference"] = {
             "model_load_ms": model_load_ms,
+            "cold_start_ms": cold_start_ms,
+            "warmup_forward_passes": len(warmup_latencies),
+            "warmup_inference_ms": warmup_latencies,
             "decisions": len(predictions),
             "accuracy": accuracy,
             "macro_f1": macro_f1,
@@ -211,8 +276,13 @@ def run(args: argparse.Namespace) -> int:
             "per_label": _per_label_metrics(references, predictions, labels),
             "median_inference_ms": statistics.median(latencies),
             "p95_inference_ms": sorted(latencies)[int(0.95 * (len(latencies) - 1))],
+            "minimum_label_mass": min(label_masses),
+            "median_label_mass": statistics.median(label_masses),
+            "minimum_label_mass_gate": minimum_label_mass,
             "peak_vram_bytes": peak_vram_bytes,
             "feasibility_gate_passed": feasible,
+            "gpu_compute_apps_before": gpu_compute_apps_before,
+            "gpu_compute_apps_after": gpu_compute_apps_after,
         }
         prediction_path = root / args.predictions
         prediction_path.parent.mkdir(parents=True, exist_ok=True)

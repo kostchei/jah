@@ -7,8 +7,7 @@ model_class: AutoModelForMultimodalLM
 precision: bfloat16
 device: cuda
 maximum_input_tokens: 8192
-prompt_version: decision-prompt-v1
-label_version: latin-uppercase-v1
-labels: [" A", " B", " C", " D", " E", " F", " G", " H", " I", " J", " K", " L", " M", " N", " O", " P"]
+prompt_version: decision-prompt-v2
+label_version: latin-uppercase-bare-v2
+labels: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"]
 release_status: m0-candidate
-
