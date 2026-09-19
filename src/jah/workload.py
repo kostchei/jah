@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from collections import Counter
 from pathlib import Path
 from typing import Annotated, Literal
@@ -17,6 +18,7 @@ from jah.schemas import ChoiceOption, ChoiceQuestion, EvaluateRequest, Identifie
 class Annotation(StrictModel):
     annotator_id: Identifier
     label: Identifier
+    annotator_kind: Literal["human", "model", "unknown"] = "unknown"
 
 
 class Provenance(StrictModel):
@@ -36,7 +38,11 @@ class M0Example(StrictModel):
     template_id: Identifier
     provenance: Provenance
     annotations: Annotated[list[Annotation], Field(min_length=2)]
-    annotation_status: Literal["adjudicated-agreement", "adjudicated-resolution"]
+    annotation_status: Literal[
+        "single-author-two-pass",
+        "adjudicated-agreement",
+        "adjudicated-resolution",
+    ]
 
     @model_validator(mode="after")
     def valid_adjudication(self) -> M0Example:
@@ -45,10 +51,20 @@ class M0Example(StrictModel):
             raise ValueError("reference answer must name a supplied option")
         if any(annotation.label not in option_ids for annotation in self.annotations):
             raise ValueError("annotation label must name a supplied option")
-        if self.annotation_status == "adjudicated-agreement" and any(
+        if self.annotation_status in {"single-author-two-pass", "adjudicated-agreement"} and any(
             annotation.label != self.reference_answer for annotation in self.annotations
         ):
             raise ValueError("agreement annotations must match the reference answer")
+        if self.annotation_status.startswith("adjudicated-"):
+            human_annotators = {
+                annotation.annotator_id
+                for annotation in self.annotations
+                if annotation.annotator_kind == "human"
+            }
+            if len(human_annotators) < 2:
+                raise ValueError(
+                    "adjudicated rows require at least two distinct human annotator IDs"
+                )
         return self
 
     def as_request(self, instructions: str) -> EvaluateRequest:
@@ -116,3 +132,17 @@ def sha256_file(path: Path) -> str:
 def stable_json_sha256(value: object) -> str:
     payload = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def git_commit_sha(root: Path) -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+    return result.stdout.strip() or None

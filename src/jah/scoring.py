@@ -61,3 +61,16 @@ def score_option_logits(
         probabilities=probabilities,
         expected_value=expected_value,
     )
+
+
+def label_probability_mass(final_logits, label_token_ids: tuple[int, ...]) -> float:
+    """Return the labels' combined probability under the full vocabulary softmax."""
+    import torch
+
+    if final_logits.ndim != 1:
+        raise ValueError("expected final logits [vocab]")
+    if not label_token_ids:
+        raise ValueError("at least one label token ID is required")
+    indices = torch.tensor(label_token_ids, dtype=torch.long, device=final_logits.device)
+    probabilities = torch.softmax(final_logits.to(dtype=torch.float32), dim=-1)
+    return float(probabilities.index_select(-1, indices).sum().item())
