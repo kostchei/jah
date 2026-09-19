@@ -1,0 +1,127 @@
+{
+  "created_at": "2026-09-19T15:06:04.384519+00:00",
+  "dataset": {
+    "annotation_status_counts": {
+      "adjudicated-agreement": 50
+    },
+    "examples": 50,
+    "label_counts": {
+      "account": 12,
+      "billing": 13,
+      "other": 12,
+      "technical": 13
+    },
+    "path": "evals/data/support-routing-m0.jsonl",
+    "sha256": "70ce9a78806a022f2aa0c2ecc1fd486575115a7e9c0a99d13f88e9220d5b041e"
+  },
+  "environment": {
+    "cuda_available": true,
+    "cuda_runtime": "12.8",
+    "gpus": [
+      {
+        "compute_capability": "8.9",
+        "driver": "616.64",
+        "memory_mib": "24564",
+        "name": "NVIDIA GeForce RTX 4090"
+      }
+    ],
+    "host_ram_bytes": 68388204544,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.9",
+    "torch": "2.10.0+cu128",
+    "transformers": "5.17.0"
+  },
+  "evidence_sha256": "5a8ff2f03f35a6f1a40e48372c050ca9cf1f5120d0919e1b5d0269333f098b58",
+  "inference": {
+    "accuracy": 0.74,
+    "decisions": 50,
+    "feasibility_gate_passed": true,
+    "macro_f1": 0.7517339176378077,
+    "majority_accuracy": 0.26,
+    "margin_over_majority": 0.48,
+    "median_inference_ms": 108.86699999537086,
+    "model_load_ms": 22443.619499987108,
+    "p95_inference_ms": 9599.23649999837,
+    "peak_vram_bytes": 9317040128,
+    "per_label": {
+      "account": {
+        "correct": 9,
+        "f1": 0.8571428571428571,
+        "precision": 1.0,
+        "recall": 0.75,
+        "support": 12
+      },
+      "billing": {
+        "correct": 10,
+        "f1": 0.8695652173913044,
+        "precision": 1.0,
+        "recall": 0.7692307692307693,
+        "support": 13
+      },
+      "other": {
+        "correct": 12,
+        "f1": 0.6486486486486487,
+        "precision": 0.48,
+        "recall": 1.0,
+        "support": 12
+      },
+      "technical": {
+        "correct": 6,
+        "f1": 0.631578947368421,
+        "precision": 1.0,
+        "recall": 0.46153846153846156,
+        "support": 13
+      }
+    }
+  },
+  "model": {
+    "artifact_id": "qwen3.5-4b-m0",
+    "device": "cuda",
+    "label_version": "latin-uppercase-v1",
+    "labels": [
+      " A",
+      " B",
+      " C",
+      " D",
+      " E",
+      " F",
+      " G",
+      " H",
+      " I",
+      " J",
+      " K",
+      " L",
+      " M",
+      " N",
+      " O",
+      " P"
+    ],
+    "license": "apache-2.0",
+    "maximum_input_tokens": 8192,
+    "model_class": "AutoModelForMultimodalLM",
+    "model_id": "Qwen/Qwen3.5-4B",
+    "precision": "bfloat16",
+    "prompt_version": "decision-prompt-v1",
+    "release_status": "m0-candidate",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "schema_version": 1
+  },
+  "model_config_sha256": "b84d8aac1dba27118c6f6aef239923798d384452f7bebbc61fc3ea4c8368e08e",
+  "predictions_sha256": "80b93c51f2583dc387f9af2ff4824668d70ef5d4bdfffd77882b1c93793db243",
+  "schema_version": 1,
+  "status": "pass",
+  "tokenizer": {
+    "all_label_mappings_identical": true,
+    "class": "Qwen2Tokenizer",
+    "load_ms": 1854.3155999941519,
+    "maximum_compiled_tokens": 254,
+    "verified_label_token_ids": [
+      357,
+      417,
+      351,
+      414
+    ],
+    "vocab_size": 248044
+  },
+  "workload_config_sha256": "d5192a73674f70475a1724ab6c45d8f3039948a30f68a04033e9df90ffd9d842"
+}

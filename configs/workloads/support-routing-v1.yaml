@@ -1,0 +1,32 @@
+schema_version: 1
+workload_id: support-routing-v1
+status: frozen-m0
+frozen_at: 2026-09-19
+owner: repository-owner
+annotation_owner: repository-owner
+primitive: choice
+runtime_environment: windows-native-development
+expected_traffic:
+  target_requests_per_second: 1
+  questions_per_request: [1, 32]
+error_costs:
+  incorrect_automatic_route: high
+  unnecessary_review: low
+  policy: All M0 outputs are review-only; automatic acceptance is disabled.
+instructions: Select the single team responsible for the customer's primary request. Select other when no listed team applies or the supplied evidence is insufficient.
+options:
+  - id: billing
+    description: Charges, payments, invoices, refunds, subscriptions, or duplicate transactions.
+  - id: technical
+    description: Product defects, errors, outages, installation, connectivity, or software behavior.
+  - id: account
+    description: Login, password, identity verification, permissions, account profile, or account access.
+  - id: other
+    description: No listed team applies, the request is general, or evidence is insufficient.
+dataset: evals/data/support-routing-m0.jsonl
+dataset_sha256: 70ce9a78806a022f2aa0c2ecc1fd486575115a7e9c0a99d13f88e9220d5b041e
+split_policy: All 50 M0 examples are feasibility-only and must not enter the future locked test split.
+provisional_feasibility_gate:
+  minimum_accuracy: 0.50
+  minimum_margin_over_majority: 0.05
+  maximum_prompt_tokens: 8192

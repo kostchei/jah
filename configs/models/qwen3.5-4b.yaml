@@ -1,0 +1,14 @@
+schema_version: 1
+artifact_id: qwen3.5-4b-m0
+model_id: Qwen/Qwen3.5-4B
+revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+license: apache-2.0
+model_class: AutoModelForMultimodalLM
+precision: bfloat16
+device: cuda
+maximum_input_tokens: 8192
+prompt_version: decision-prompt-v1
+label_version: latin-uppercase-v1
+labels: [" A", " B", " C", " D", " E", " F", " G", " H", " I", " J", " K", " L", " M", " N", " O", " P"]
+release_status: m0-candidate
+

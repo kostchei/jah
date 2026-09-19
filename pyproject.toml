@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jev-at-home"
+version = "0.1.0"
+description = "Local direct-logit decision service"
+readme = "JEV_AT_HOME_SPEC.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "pydantic>=2.12,<3",
+  "PyYAML>=6.0.3,<7",
+]
+
+[project.optional-dependencies]
+inference = [
+  "accelerate>=1.12,<2",
+  "huggingface-hub>=1.4,<2",
+  "safetensors>=0.7,<1",
+  "torch==2.10.0",
+  "transformers>=5.13,<6",
+]
+dev = [
+  "pytest>=9,<10",
+  "pytest-cov>=7,<8",
+  "ruff>=0.15,<1",
+]
+
+[project.scripts]
+jah-compat = "jah.compat:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jah"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
