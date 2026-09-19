@@ -150,13 +150,14 @@ The independent human pass runs in parallel and does not block the merge. It mus
 
 **Definition of done**
 
-- [ ] Baseline M0 tree committed on `m0`
-- [ ] Bare labels in place; minimum label mass ≥ 0.5 on all 50 cases
-- [ ] Order-bias findings in `artifacts/m0/order_bias.json` and `M0_RESULTS.md`, with an M1 prompt action named
-- [ ] Annotation status reads `single-author-two-pass`; results doc wording corrected
-- [ ] Budgets and stop conditions recorded in the workload file and results doc
-- [ ] Warmup added; cold start and GPU contention recorded
-- [ ] Boolean complement and Score expected-value tests pass
-- [ ] Platform deviation noted
-- [ ] Evidence regenerated from the final commit, SHA recorded, merged to `main`
+- [x] Baseline M0 tree preserved as the parent of the `m0` implementation commits
+- [x] Bare labels in place; minimum label mass ≥ 0.5 on all 50 cases
+- [x] Order-bias findings in `artifacts/m0/order_bias.json` and `M0_RESULTS.md`, with an M1 prompt action named
+- [x] Annotation status reads `single-author-two-pass`; results doc wording corrected
+- [x] Budgets and stop conditions recorded in the workload file and results doc
+- [x] Warmup added; cold start and GPU contention recorded
+- [x] Boolean complement and Score expected-value tests pass
+- [x] Platform deviation noted
+- [x] Evidence regenerated from source commit `b79fc7df9943bafce5a0ca558ed0278113b0c688` and SHA recorded
+- [ ] `m0` merged to `main`
 - [ ] Independent human pass complete or scheduled with a named annotator
