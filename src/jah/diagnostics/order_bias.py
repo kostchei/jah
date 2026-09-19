@@ -185,13 +185,15 @@ def _variants(examples, compile_variant, run_name: str) -> list[dict]:
 
 
 def _finding(runs: dict) -> dict[str, object]:
+    threshold = 0.10
+    tolerance = 1e-12
     position_shares = runs["R1"]["other_prediction_share_by_position"]
     d_share = position_shares["D"]
     other_position_max = max(value for label, value in position_shares.items() if label != "D")
-    position_bias = d_share - other_position_max >= 0.10
+    position_bias = d_share - other_position_max >= threshold - tolerance
     r0_other_share = runs["R0"]["predicted_class_counts"].get("other", 0) / runs["R0"]["cases"]
     r3_other_share = runs["R3"]["predicted_class_counts"].get("other", 0) / runs["R3"]["cases"]
-    wording_bias = r0_other_share - r3_other_share >= 0.10
+    wording_bias = r0_other_share - r3_other_share >= threshold - tolerance
     if position_bias and wording_bias:
         branch = "both"
         action = (
@@ -210,7 +212,7 @@ def _finding(runs: dict) -> dict[str, object]:
         "branch": branch,
         "m1_prompt_action": action,
         "heuristic": {
-            "minimum_absolute_share_difference": 0.10,
+            "minimum_absolute_share_difference": threshold,
             "position_bias": position_bias,
             "wording_bias": wording_bias,
             "r1_other_share_when_position_d": d_share,
