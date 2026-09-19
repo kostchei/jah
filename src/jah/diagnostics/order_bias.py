@@ -79,32 +79,28 @@ def _compile(
 
 
 def _run_variants(
-    backend, variants, baseline_predictions, minimum_label_mass: float, batch_size: int = 8
-) -> dict:
+    backend,
+    variants,
+    baseline_predictions,
+    minimum_label_mass: float,
+    measurement_cache=None,
+) -> tuple[dict, dict]:
     rows = []
     label_masses = []
     probability_by_letter: dict[str, list[float]] = defaultdict(list)
     other_wins_by_position: dict[str, list[bool]] = defaultdict(list)
     predicted_letters = Counter()
-    cache = {}
+    cache = {} if measurement_cache is None else measurement_cache
 
     unique_questions = {}
     for variant in variants:
         question = variant["question"]
         unique_questions.setdefault(question.prompt, question)
-    questions_by_length = defaultdict(list)
+    new_forward_passes = 0
     for prompt, question in unique_questions.items():
-        questions_by_length[question.input_tokens].append((prompt, question))
-    forward_batches = 0
-    for same_length_items in questions_by_length.values():
-        for start in range(0, len(same_length_items), batch_size):
-            batch = same_length_items[start : start + batch_size]
-            measurements = backend.score_batch([question for _, question in batch])
-            cache.update(
-                (prompt, measurement)
-                for (prompt, _), measurement in zip(batch, measurements, strict=True)
-            )
-            forward_batches += 1
+        if prompt not in cache:
+            cache[prompt] = backend.score(question)
+            new_forward_passes += 1
 
     for variant in variants:
         question = variant["question"]
@@ -145,11 +141,10 @@ def _run_variants(
     references = [row["reference"] for row in rows]
     predictions = [row["prediction"] for row in rows]
     labels = list(rows[0]["probabilities"])
-    return {
+    report = {
         "cases": len(rows),
-        "unique_forward_passes": len(cache),
-        "forward_batches": forward_batches,
-        "microbatch_size": batch_size,
+        "unique_prompts": len(unique_questions),
+        "new_forward_passes": new_forward_passes,
         "accuracy": sum(r == p for r, p in zip(references, predictions, strict=True)) / len(rows),
         "macro_f1": _macro_f1(references, predictions, labels),
         "predicted_class_counts": dict(sorted(Counter(predictions).items())),
@@ -169,6 +164,7 @@ def _run_variants(
         },
         "rows": rows,
     }
+    return report, cache
 
 
 def _variants(examples, compile_variant, run_name: str) -> list[dict]:
@@ -265,7 +261,9 @@ def run(args: argparse.Namespace) -> int:
         backend.score(baseline_variants[warmup_index]["question"])
     minimum_label_mass = workload["provisional_feasibility_gate"]["minimum_label_mass"]
     empty_baseline = {example.example_id: "" for example in examples}
-    r0 = _run_variants(backend, baseline_variants, empty_baseline, minimum_label_mass, batch_size=1)
+    r0, measurement_cache = _run_variants(
+        backend, baseline_variants, empty_baseline, minimum_label_mass
+    )
     baseline_predictions = {row["example_id"]: row["prediction"] for row in r0["rows"]}
     r0["label_aligned_flip_rate_vs_r0"] = 0.0
 
@@ -295,11 +293,12 @@ def run(args: argparse.Namespace) -> int:
         ),
     }
     runs = {"R0": r0}
-    runs["R1"] = _run_variants(
+    runs["R1"], measurement_cache = _run_variants(
         backend,
         _variants(examples, compilers["R1"], "R1"),
         baseline_predictions,
         minimum_label_mass,
+        measurement_cache,
     )
     rotation_zero_mismatches = [
         row["example_id"]
@@ -312,11 +311,12 @@ def run(args: argparse.Namespace) -> int:
             + ", ".join(rotation_zero_mismatches)
         )
     for run_name in ("R2", "R3", "R4"):
-        runs[run_name] = _run_variants(
+        runs[run_name], measurement_cache = _run_variants(
             backend,
             _variants(examples, compilers[run_name], run_name),
             baseline_predictions,
             minimum_label_mass,
+            measurement_cache,
         )
 
     report = {
