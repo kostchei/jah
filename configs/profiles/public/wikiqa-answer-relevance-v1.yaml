@@ -1,0 +1,98 @@
+schema_version: 1
+profile_id: wikiqa-answer-relevance-v1
+workload_id: wikiqa-answer-relevance-v1
+primitive: boolean
+artifact_id: qwen3.5-4b-m0
+model_id: Qwen/Qwen3.5-4B
+revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+precision: bfloat16
+prompt_version: decision-prompt-v2
+label_version: latin-uppercase-bare-v2
+cardinality_range:
+- 2
+- 2
+method: temperature_scaling
+temperature: 0.7999
+policy:
+  type: review_only
+  threshold: 0.9
+  metric: max_probability
+dataset_sha256: 5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed
+split: calibration
+fitted_at: '2026-09-20T05:57:06.229720+00:00'
+metrics:
+  brier_score: 0.299406
+  prevalence_brier_score: 0.099623
+  nll: 0.458021
+  ece: 0.045374
+  coverage: 0.0
+  accepted_error_rate: 0.0
+  accepted_error_95_upper_bound: 1.0
+  sample_count: 1883
+  accepted_count: 0
+  errors_in_accepted: 0
+  gate_ece_passed: true
+  gate_brier_passed: false
+  gate_selective_passed: false
+  samples_sufficient_for_gate: false
+  reliability_bins:
+  - count: 189
+    mean_confidence: 0.5441969228046895
+    accuracy: 0.6190476190476191
+    difference: 0.07485069624292962
+    min_confidence: 0.5
+    max_confidence: 0.5775048973824004
+  - count: 189
+    mean_confidence: 0.6211541150130067
+    accuracy: 0.5396825396825397
+    difference: 0.081471575330467
+    min_confidence: 0.5775048973824004
+    max_confidence: 0.651372608213627
+  - count: 189
+    mean_confidence: 0.6987607866634612
+    accuracy: 0.5978835978835979
+    difference: 0.10087718877986329
+    min_confidence: 0.651372608213627
+    max_confidence: 0.7186180921712795
+  - count: 189
+    mean_confidence: 0.7560852869936759
+    accuracy: 0.6666666666666666
+    difference: 0.08941862032700931
+    min_confidence: 0.7186180921712795
+    max_confidence: 0.7773269110068148
+  - count: 189
+    mean_confidence: 0.8061809520704171
+    accuracy: 0.8042328042328042
+    difference: 0.0019481478376128791
+    min_confidence: 0.7773269110068148
+    max_confidence: 0.8267397761350505
+  - count: 189
+    mean_confidence: 0.8453988203764621
+    accuracy: 0.8835978835978836
+    difference: 0.038199063221421525
+    min_confidence: 0.8267397761350505
+    max_confidence: 0.8670627807187359
+  - count: 189
+    mean_confidence: 0.8782554557425384
+    accuracy: 0.9047619047619048
+    difference: 0.026506449019366385
+    min_confidence: 0.8670627807187359
+    max_confidence: 0.8991461790259094
+  - count: 189
+    mean_confidence: 0.9054858879310775
+    accuracy: 0.91005291005291
+    difference: 0.004567022121832465
+    min_confidence: 0.8991461790259094
+    max_confidence: 0.9124595677267625
+  - count: 189
+    mean_confidence: 0.9277834917180248
+    accuracy: 0.9523809523809523
+    difference: 0.02459746066292756
+    min_confidence: 0.9124595677267625
+    max_confidence: 0.9344155159447394
+  - count: 182
+    mean_confidence: 0.9515494688669603
+    accuracy: 0.9615384615384616
+    difference: 0.009988992671501218
+    min_confidence: 0.9344155159447394
+    max_confidence: 0.9855039567643191

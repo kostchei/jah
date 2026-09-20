@@ -1,0 +1,98 @@
+schema_version: 1
+profile_id: asap2-source-essay-v1
+workload_id: asap2-source-essay-v1
+primitive: score
+artifact_id: qwen3.5-4b-m0
+model_id: Qwen/Qwen3.5-4B
+revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+precision: bfloat16
+prompt_version: decision-prompt-v2
+label_version: latin-uppercase-bare-v2
+cardinality_range:
+- 2
+- 16
+method: temperature_scaling
+temperature: 1.2162
+policy:
+  type: review_only
+  threshold: 0.9
+  metric: max_probability
+dataset_sha256: 5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed
+split: calibration
+fitted_at: '2026-09-20T05:57:06.194378+00:00'
+metrics:
+  brier_score: 0.770769
+  prevalence_brier_score: 0.748971
+  nll: 1.568374
+  ece: 0.094514
+  coverage: 0.0
+  accepted_error_rate: 0.0
+  accepted_error_95_upper_bound: 1.0
+  sample_count: 442
+  accepted_count: 0
+  errors_in_accepted: 0
+  gate_ece_passed: false
+  gate_brier_passed: false
+  gate_selective_passed: false
+  samples_sufficient_for_gate: false
+  reliability_bins:
+  - count: 45
+    mean_confidence: 0.23740368292390213
+    accuracy: 0.26666666666666666
+    difference: 0.029262983742764537
+    min_confidence: 0.19553798493180755
+    max_confidence: 0.25308548589603963
+  - count: 45
+    mean_confidence: 0.26508386301985465
+    accuracy: 0.24444444444444444
+    difference: 0.020639418575410212
+    min_confidence: 0.2547413085788085
+    max_confidence: 0.2758675268595878
+  - count: 45
+    mean_confidence: 0.28289688148048875
+    accuracy: 0.26666666666666666
+    difference: 0.016230214813822086
+    min_confidence: 0.27723624811459396
+    max_confidence: 0.28967560898419836
+  - count: 45
+    mean_confidence: 0.29706113349798
+    accuracy: 0.4222222222222222
+    difference: 0.1251610887242422
+    min_confidence: 0.2900544403220633
+    max_confidence: 0.3051168856934947
+  - count: 45
+    mean_confidence: 0.3123798525708715
+    accuracy: 0.37777777777777777
+    difference: 0.0653979252069063
+    min_confidence: 0.3058235295807631
+    max_confidence: 0.31944626104384444
+  - count: 45
+    mean_confidence: 0.3259487115449943
+    accuracy: 0.4888888888888889
+    difference: 0.1629401773438946
+    min_confidence: 0.32000380565452763
+    max_confidence: 0.3324530539844155
+  - count: 45
+    mean_confidence: 0.34400541488014424
+    accuracy: 0.4
+    difference: 0.05599458511985578
+    min_confidence: 0.3329807106282926
+    max_confidence: 0.35340668473944364
+  - count: 45
+    mean_confidence: 0.3653350521835505
+    accuracy: 0.4222222222222222
+    difference: 0.05688717003867172
+    min_confidence: 0.35340668473944364
+    max_confidence: 0.3860752087472048
+  - count: 45
+    mean_confidence: 0.4095880148824992
+    accuracy: 0.35555555555555557
+    difference: 0.054032459326943616
+    min_confidence: 0.3872941023244015
+    max_confidence: 0.43676900265408375
+  - count: 37
+    mean_confidence: 0.577859875690381
+    accuracy: 0.16216216216216217
+    difference: 0.4156977135282188
+    min_confidence: 0.4384967578299574
+    max_confidence: 0.8817715342791304

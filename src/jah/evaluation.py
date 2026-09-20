@@ -181,7 +181,10 @@ def run_evaluation(args: argparse.Namespace) -> int:
     calibrated_dispositions: dict[tuple[str, str], list[str]] = defaultdict(list)
     option_cardinalities: dict[tuple[str, str], int] = {}
 
-    for example in selected:
+    total_sel = len(selected)
+    for idx, example in enumerate(selected):
+        if (idx + 1) % 500 == 0 or idx + 1 == total_sel:
+            print(f"Evaluation scoring: {idx + 1}/{total_sel} examples...", flush=True)
         req = example.request
         if getattr(args, "use_workload_profiles", False):
             req = example.request.model_copy(update={"profile": example.workload_id})
@@ -533,7 +536,10 @@ def run_calibration(args: argparse.Namespace) -> int:
         "public_benchmark": False,
     })
 
-    for example in calibration_examples:
+    total_cal = len(calibration_examples)
+    for idx, example in enumerate(calibration_examples):
+        if (idx + 1) % 250 == 0 or idx + 1 == total_cal:
+            print(f"Calibration scoring: {idx + 1}/{total_cal} examples...", flush=True)
         compiled = compile_request(example.request, tokenizer=backend.tokenizer)
         for q_compiled in compiled:
             question_id = q_compiled.question_id

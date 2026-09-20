@@ -1,0 +1,374 @@
+{
+  "asap2-source-essay-v1": {
+    "artifact_id": "qwen3.5-4b-m0",
+    "cardinality_range": [
+      2,
+      16
+    ],
+    "dataset_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed",
+    "fitted_at": "2026-09-20T05:57:06.194378+00:00",
+    "label_version": "latin-uppercase-bare-v2",
+    "method": "temperature_scaling",
+    "metrics": {
+      "accepted_count": 0,
+      "accepted_error_95_upper_bound": 1.0,
+      "accepted_error_rate": 0.0,
+      "brier_score": 0.770769,
+      "coverage": 0.0,
+      "ece": 0.094514,
+      "errors_in_accepted": 0,
+      "gate_brier_passed": false,
+      "gate_ece_passed": false,
+      "gate_selective_passed": false,
+      "nll": 1.568374,
+      "prevalence_brier_score": 0.748971,
+      "reliability_bins": [
+        {
+          "accuracy": 0.26666666666666666,
+          "count": 45,
+          "difference": 0.029262983742764537,
+          "max_confidence": 0.25308548589603963,
+          "mean_confidence": 0.23740368292390213,
+          "min_confidence": 0.19553798493180755
+        },
+        {
+          "accuracy": 0.24444444444444444,
+          "count": 45,
+          "difference": 0.020639418575410212,
+          "max_confidence": 0.2758675268595878,
+          "mean_confidence": 0.26508386301985465,
+          "min_confidence": 0.2547413085788085
+        },
+        {
+          "accuracy": 0.26666666666666666,
+          "count": 45,
+          "difference": 0.016230214813822086,
+          "max_confidence": 0.28967560898419836,
+          "mean_confidence": 0.28289688148048875,
+          "min_confidence": 0.27723624811459396
+        },
+        {
+          "accuracy": 0.4222222222222222,
+          "count": 45,
+          "difference": 0.1251610887242422,
+          "max_confidence": 0.3051168856934947,
+          "mean_confidence": 0.29706113349798,
+          "min_confidence": 0.2900544403220633
+        },
+        {
+          "accuracy": 0.37777777777777777,
+          "count": 45,
+          "difference": 0.0653979252069063,
+          "max_confidence": 0.31944626104384444,
+          "mean_confidence": 0.3123798525708715,
+          "min_confidence": 0.3058235295807631
+        },
+        {
+          "accuracy": 0.4888888888888889,
+          "count": 45,
+          "difference": 0.1629401773438946,
+          "max_confidence": 0.3324530539844155,
+          "mean_confidence": 0.3259487115449943,
+          "min_confidence": 0.32000380565452763
+        },
+        {
+          "accuracy": 0.4,
+          "count": 45,
+          "difference": 0.05599458511985578,
+          "max_confidence": 0.35340668473944364,
+          "mean_confidence": 0.34400541488014424,
+          "min_confidence": 0.3329807106282926
+        },
+        {
+          "accuracy": 0.4222222222222222,
+          "count": 45,
+          "difference": 0.05688717003867172,
+          "max_confidence": 0.3860752087472048,
+          "mean_confidence": 0.3653350521835505,
+          "min_confidence": 0.35340668473944364
+        },
+        {
+          "accuracy": 0.35555555555555557,
+          "count": 45,
+          "difference": 0.054032459326943616,
+          "max_confidence": 0.43676900265408375,
+          "mean_confidence": 0.4095880148824992,
+          "min_confidence": 0.3872941023244015
+        },
+        {
+          "accuracy": 0.16216216216216217,
+          "count": 37,
+          "difference": 0.4156977135282188,
+          "max_confidence": 0.8817715342791304,
+          "mean_confidence": 0.577859875690381,
+          "min_confidence": 0.4384967578299574
+        }
+      ],
+      "sample_count": 442,
+      "samples_sufficient_for_gate": false
+    },
+    "model_id": "Qwen/Qwen3.5-4B",
+    "policy": {
+      "metric": "max_probability",
+      "threshold": 0.9,
+      "type": "review_only"
+    },
+    "precision": "bfloat16",
+    "primitive": "score",
+    "profile_id": "asap2-source-essay-v1",
+    "prompt_version": "decision-prompt-v2",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "schema_version": 1,
+    "split": "calibration",
+    "temperature": 1.2162,
+    "workload_id": "asap2-source-essay-v1"
+  },
+  "banking77-16-intent-v1": {
+    "artifact_id": "qwen3.5-4b-m0",
+    "cardinality_range": [
+      2,
+      16
+    ],
+    "dataset_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed",
+    "fitted_at": "2026-09-20T05:57:06.205378+00:00",
+    "label_version": "latin-uppercase-bare-v2",
+    "method": "temperature_scaling",
+    "metrics": {
+      "accepted_count": 0,
+      "accepted_error_95_upper_bound": 1.0,
+      "accepted_error_rate": 0.0,
+      "brier_score": 0.234752,
+      "coverage": 0.0,
+      "ece": 0.047522,
+      "errors_in_accepted": 0,
+      "gate_brier_passed": true,
+      "gate_ece_passed": true,
+      "gate_selective_passed": false,
+      "nll": 0.640459,
+      "prevalence_brier_score": 0.929201,
+      "reliability_bins": [
+        {
+          "accuracy": 0.2916666666666667,
+          "count": 24,
+          "difference": 0.0536012543664125,
+          "max_confidence": 0.47544945978780406,
+          "mean_confidence": 0.3452679210330792,
+          "min_confidence": 0.13737268441199868
+        },
+        {
+          "accuracy": 0.5833333333333334,
+          "count": 24,
+          "difference": 0.019747805670904284,
+          "max_confidence": 0.6411832079525092,
+          "mean_confidence": 0.5635855276624291,
+          "min_confidence": 0.4840024839989593
+        },
+        {
+          "accuracy": 0.7916666666666666,
+          "count": 24,
+          "difference": 0.06413401069613012,
+          "max_confidence": 0.7868043820312367,
+          "mean_confidence": 0.7275326559705365,
+          "min_confidence": 0.6480782047241918
+        },
+        {
+          "accuracy": 0.9166666666666666,
+          "count": 24,
+          "difference": 0.0966975615745016,
+          "max_confidence": 0.8598221640903666,
+          "mean_confidence": 0.819969105092165,
+          "min_confidence": 0.7884037888003707
+        },
+        {
+          "accuracy": 0.7916666666666666,
+          "count": 24,
+          "difference": 0.10052613738048677,
+          "max_confidence": 0.9153083501981805,
+          "mean_confidence": 0.8921928040471534,
+          "min_confidence": 0.8600962705175245
+        },
+        {
+          "accuracy": 1.0,
+          "count": 24,
+          "difference": 0.06262280085430338,
+          "max_confidence": 0.9544180483752528,
+          "mean_confidence": 0.9373771991456966,
+          "min_confidence": 0.9156768550091431
+        },
+        {
+          "accuracy": 1.0,
+          "count": 24,
+          "difference": 0.03351171463955105,
+          "max_confidence": 0.9738378365322853,
+          "mean_confidence": 0.966488285360449,
+          "min_confidence": 0.9546345408886712
+        },
+        {
+          "accuracy": 1.0,
+          "count": 24,
+          "difference": 0.021413755112371535,
+          "max_confidence": 0.9826166552010479,
+          "mean_confidence": 0.9785862448876285,
+          "min_confidence": 0.9745415952201469
+        },
+        {
+          "accuracy": 1.0,
+          "count": 24,
+          "difference": 0.01464927136580585,
+          "max_confidence": 0.9882667668280616,
+          "mean_confidence": 0.9853507286341942,
+          "min_confidence": 0.9827473574045272
+        },
+        {
+          "accuracy": 1.0,
+          "count": 24,
+          "difference": 0.008314111498512244,
+          "max_confidence": 0.9946496374393938,
+          "mean_confidence": 0.9916858885014878,
+          "min_confidence": 0.9887114161794055
+        }
+      ],
+      "sample_count": 240,
+      "samples_sufficient_for_gate": false
+    },
+    "model_id": "Qwen/Qwen3.5-4B",
+    "policy": {
+      "metric": "max_probability",
+      "threshold": 0.9,
+      "type": "review_only"
+    },
+    "precision": "bfloat16",
+    "primitive": "choice",
+    "profile_id": "banking77-16-intent-v1",
+    "prompt_version": "decision-prompt-v2",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "schema_version": 1,
+    "split": "calibration",
+    "temperature": 1.3522,
+    "workload_id": "banking77-16-intent-v1"
+  },
+  "wikiqa-answer-relevance-v1": {
+    "artifact_id": "qwen3.5-4b-m0",
+    "cardinality_range": [
+      2,
+      2
+    ],
+    "dataset_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed",
+    "fitted_at": "2026-09-20T05:57:06.229720+00:00",
+    "label_version": "latin-uppercase-bare-v2",
+    "method": "temperature_scaling",
+    "metrics": {
+      "accepted_count": 0,
+      "accepted_error_95_upper_bound": 1.0,
+      "accepted_error_rate": 0.0,
+      "brier_score": 0.299406,
+      "coverage": 0.0,
+      "ece": 0.045374,
+      "errors_in_accepted": 0,
+      "gate_brier_passed": false,
+      "gate_ece_passed": true,
+      "gate_selective_passed": false,
+      "nll": 0.458021,
+      "prevalence_brier_score": 0.099623,
+      "reliability_bins": [
+        {
+          "accuracy": 0.6190476190476191,
+          "count": 189,
+          "difference": 0.07485069624292962,
+          "max_confidence": 0.5775048973824004,
+          "mean_confidence": 0.5441969228046895,
+          "min_confidence": 0.5
+        },
+        {
+          "accuracy": 0.5396825396825397,
+          "count": 189,
+          "difference": 0.081471575330467,
+          "max_confidence": 0.651372608213627,
+          "mean_confidence": 0.6211541150130067,
+          "min_confidence": 0.5775048973824004
+        },
+        {
+          "accuracy": 0.5978835978835979,
+          "count": 189,
+          "difference": 0.10087718877986329,
+          "max_confidence": 0.7186180921712795,
+          "mean_confidence": 0.6987607866634612,
+          "min_confidence": 0.651372608213627
+        },
+        {
+          "accuracy": 0.6666666666666666,
+          "count": 189,
+          "difference": 0.08941862032700931,
+          "max_confidence": 0.7773269110068148,
+          "mean_confidence": 0.7560852869936759,
+          "min_confidence": 0.7186180921712795
+        },
+        {
+          "accuracy": 0.8042328042328042,
+          "count": 189,
+          "difference": 0.0019481478376128791,
+          "max_confidence": 0.8267397761350505,
+          "mean_confidence": 0.8061809520704171,
+          "min_confidence": 0.7773269110068148
+        },
+        {
+          "accuracy": 0.8835978835978836,
+          "count": 189,
+          "difference": 0.038199063221421525,
+          "max_confidence": 0.8670627807187359,
+          "mean_confidence": 0.8453988203764621,
+          "min_confidence": 0.8267397761350505
+        },
+        {
+          "accuracy": 0.9047619047619048,
+          "count": 189,
+          "difference": 0.026506449019366385,
+          "max_confidence": 0.8991461790259094,
+          "mean_confidence": 0.8782554557425384,
+          "min_confidence": 0.8670627807187359
+        },
+        {
+          "accuracy": 0.91005291005291,
+          "count": 189,
+          "difference": 0.004567022121832465,
+          "max_confidence": 0.9124595677267625,
+          "mean_confidence": 0.9054858879310775,
+          "min_confidence": 0.8991461790259094
+        },
+        {
+          "accuracy": 0.9523809523809523,
+          "count": 189,
+          "difference": 0.02459746066292756,
+          "max_confidence": 0.9344155159447394,
+          "mean_confidence": 0.9277834917180248,
+          "min_confidence": 0.9124595677267625
+        },
+        {
+          "accuracy": 0.9615384615384616,
+          "count": 182,
+          "difference": 0.009988992671501218,
+          "max_confidence": 0.9855039567643191,
+          "mean_confidence": 0.9515494688669603,
+          "min_confidence": 0.9344155159447394
+        }
+      ],
+      "sample_count": 1883,
+      "samples_sufficient_for_gate": false
+    },
+    "model_id": "Qwen/Qwen3.5-4B",
+    "policy": {
+      "metric": "max_probability",
+      "threshold": 0.9,
+      "type": "review_only"
+    },
+    "precision": "bfloat16",
+    "primitive": "boolean",
+    "profile_id": "wikiqa-answer-relevance-v1",
+    "prompt_version": "decision-prompt-v2",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "schema_version": 1,
+    "split": "calibration",
+    "temperature": 0.7999,
+    "workload_id": "wikiqa-answer-relevance-v1"
+  }
+}
