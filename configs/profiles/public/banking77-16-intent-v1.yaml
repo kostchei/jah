@@ -12,87 +12,88 @@ cardinality_range:
 - 2
 - 16
 method: temperature_scaling
-temperature: 1.3522
+temperature: 1.3512
+bias: null
 policy:
-  type: review_only
-  threshold: 0.9
+  type: threshold
+  threshold: 0.8877
   metric: max_probability
 dataset_sha256: 5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed
 split: calibration
-fitted_at: '2026-09-20T05:57:06.205378+00:00'
+fitted_at: '2026-09-20T11:31:33.290896+00:00'
 metrics:
-  brier_score: 0.234752
+  brier_score: 0.234723
   prevalence_brier_score: 0.929201
-  nll: 0.640459
-  ece: 0.047522
-  coverage: 0.0
-  accepted_error_rate: 0.0
-  accepted_error_95_upper_bound: 1.0
+  nll: 0.640924
+  ece: 0.046517
+  coverage: 0.5667
+  accepted_error_rate: 0.0147
+  accepted_error_95_upper_bound: 0.0456
   sample_count: 240
-  accepted_count: 0
-  errors_in_accepted: 0
+  accepted_count: 136
+  errors_in_accepted: 2
   gate_ece_passed: true
   gate_brier_passed: true
-  gate_selective_passed: false
-  samples_sufficient_for_gate: false
+  gate_selective_passed: true
+  samples_sufficient_for_gate: true
   reliability_bins:
   - count: 24
-    mean_confidence: 0.3452679210330792
+    mean_confidence: 0.3440984392329239
     accuracy: 0.2916666666666667
-    difference: 0.0536012543664125
-    min_confidence: 0.13737268441199868
-    max_confidence: 0.47544945978780406
+    difference: 0.052431772566257195
+    min_confidence: 0.13708324495042137
+    max_confidence: 0.46721081693151806
   - count: 24
-    mean_confidence: 0.5635855276624291
-    accuracy: 0.5833333333333334
-    difference: 0.019747805670904284
-    min_confidence: 0.4840024839989593
-    max_confidence: 0.6411832079525092
+    mean_confidence: 0.5553895526321222
+    accuracy: 0.5
+    difference: 0.055389552632122196
+    min_confidence: 0.4720733050689194
+    max_confidence: 0.64149149282205
   - count: 24
-    mean_confidence: 0.7275326559705365
-    accuracy: 0.7916666666666666
-    difference: 0.06413401069613012
-    min_confidence: 0.6480782047241918
-    max_confidence: 0.7868043820312367
+    mean_confidence: 0.7282981866425039
+    accuracy: 0.8333333333333334
+    difference: 0.10503514669082947
+    min_confidence: 0.6483040710559121
+    max_confidence: 0.7795664674138313
   - count: 24
-    mean_confidence: 0.819969105092165
-    accuracy: 0.9166666666666666
-    difference: 0.0966975615745016
-    min_confidence: 0.7884037888003707
-    max_confidence: 0.8598221640903666
+    mean_confidence: 0.8229577931354558
+    accuracy: 0.875
+    difference: 0.052042206864544194
+    min_confidence: 0.7800602266304937
+    max_confidence: 0.862451073305518
   - count: 24
-    mean_confidence: 0.8921928040471534
-    accuracy: 0.7916666666666666
-    difference: 0.10052613738048677
-    min_confidence: 0.8600962705175245
-    max_confidence: 0.9153083501981805
+    mean_confidence: 0.892177186294822
+    accuracy: 0.8333333333333334
+    difference: 0.05884385296148864
+    min_confidence: 0.8636497567359623
+    max_confidence: 0.9149988136352215
   - count: 24
-    mean_confidence: 0.9373771991456966
+    mean_confidence: 0.9368730461983731
     accuracy: 1.0
-    difference: 0.06262280085430338
-    min_confidence: 0.9156768550091431
-    max_confidence: 0.9544180483752528
+    difference: 0.06312695380162692
+    min_confidence: 0.9175051769871369
+    max_confidence: 0.9535980299876848
   - count: 24
-    mean_confidence: 0.966488285360449
+    mean_confidence: 0.9663174728724452
     accuracy: 1.0
-    difference: 0.03351171463955105
-    min_confidence: 0.9546345408886712
-    max_confidence: 0.9738378365322853
+    difference: 0.03368252712755482
+    min_confidence: 0.953946611501758
+    max_confidence: 0.9732814360998984
   - count: 24
-    mean_confidence: 0.9785862448876285
+    mean_confidence: 0.9784058402516229
     accuracy: 1.0
-    difference: 0.021413755112371535
-    min_confidence: 0.9745415952201469
-    max_confidence: 0.9826166552010479
+    difference: 0.021594159748377084
+    min_confidence: 0.9742448625839871
+    max_confidence: 0.9820800423688062
   - count: 24
-    mean_confidence: 0.9853507286341942
+    mean_confidence: 0.9853593964335726
     accuracy: 1.0
-    difference: 0.01464927136580585
-    min_confidence: 0.9827473574045272
-    max_confidence: 0.9882667668280616
+    difference: 0.01464060356642738
+    min_confidence: 0.9820831264066981
+    max_confidence: 0.988935708075815
   - count: 24
-    mean_confidence: 0.9916858885014878
+    mean_confidence: 0.9916172552515908
     accuracy: 1.0
-    difference: 0.008314111498512244
-    min_confidence: 0.9887114161794055
-    max_confidence: 0.9946496374393938
+    difference: 0.008382744748409166
+    min_confidence: 0.9890153650031266
+    max_confidence: 0.9943366360472262

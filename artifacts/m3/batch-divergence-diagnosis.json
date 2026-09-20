@@ -1,0 +1,146 @@
+{
+  "experiment_1_batching_without_padding": {
+    "batch_16": {
+      "against_single_item": {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.0625,
+        "max_probability_deviation": 6.069428512445185e-06,
+        "reference_top_two_margin": 0.999441380657068
+      },
+      "padded": false,
+      "row_to_row_spread": 0.0
+    },
+    "batch_2": {
+      "against_single_item": {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 4.240301051594564e-05,
+        "reference_top_two_margin": 0.999441380657068
+      },
+      "padded": false,
+      "row_to_row_spread": 0.0
+    },
+    "batch_4": {
+      "against_single_item": {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 3.351616885294284e-05,
+        "reference_top_two_margin": 0.999441380657068
+      },
+      "padded": false,
+      "row_to_row_spread": 0.0
+    },
+    "batch_8": {
+      "against_single_item": {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 3.4793257920107123e-05,
+        "reference_top_two_margin": 0.999441380657068
+      },
+      "padded": false,
+      "row_to_row_spread": 0.0
+    }
+  },
+  "experiment_2_padded_batch": {
+    "padded_width": 477,
+    "prompt_token_lengths": [
+      477,
+      477,
+      477,
+      477,
+      477,
+      477,
+      477,
+      477
+    ],
+    "rows": [
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.0,
+        "max_probability_deviation": 0.0,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s01",
+        "reference_top_two_margin": 0.5545997223493823
+      },
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 0.02979273124778492,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s02",
+        "reference_top_two_margin": 0.18533319990813946
+      },
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 0.020886916564930136,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s03",
+        "reference_top_two_margin": 0.5963735554792424
+      },
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.0,
+        "max_probability_deviation": 0.0,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s04",
+        "reference_top_two_margin": 0.7866188121086976
+      },
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.0,
+        "max_probability_deviation": 0.0,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s05",
+        "reference_top_two_margin": 0.06241874674751252
+      },
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 0.026606328661618273,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s06",
+        "reference_top_two_margin": 0.358357398350786
+      },
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 0.019387698454022495,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s07",
+        "reference_top_two_margin": 0.6351489523872873
+      },
+      {
+        "argmax_agrees": true,
+        "max_logit_deviation": 0.125,
+        "max_probability_deviation": 0.02979273124778492,
+        "pad_positions": 0,
+        "prompt_tokens": 477,
+        "question_id": "s08",
+        "reference_top_two_margin": 0.18533319990813946
+      }
+    ]
+  },
+  "experiment_3_row_position": {
+    "first_of_two": {
+      "argmax_agrees": true,
+      "max_logit_deviation": 0.125,
+      "max_probability_deviation": 0.020886916564930136,
+      "reference_top_two_margin": 0.5545997223493823
+    },
+    "second_of_two": {
+      "argmax_agrees": true,
+      "max_logit_deviation": 0.125,
+      "max_probability_deviation": 0.020886916564930136,
+      "reference_top_two_margin": 0.5545997223493823
+    }
+  },
+  "model": "Qwen/Qwen3.5-4B"
+}

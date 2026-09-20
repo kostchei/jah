@@ -123,20 +123,36 @@ def compute_decision_loss(
     logits: torch.Tensor,
     targets: torch.Tensor | Sequence[int] | Sequence[dict[str, float]],
     label_token_ids: Sequence[int],
+    *,
+    loss_type: str = "cross_entropy",
+    ordinal_penalty_weight: float = 1.0,
 ) -> torch.Tensor:
-    """Compute cross-entropy loss restricted to verified candidate answer labels.
+    """Compute loss restricted to verified candidate answer labels.
 
-    Supports hard targets (class indices) or soft targets (label probability distributions).
+    Supports standard cross-entropy and distance-weighted ordinal cross-entropy.
     """
     label_indices = torch.tensor(label_token_ids, device=logits.device, dtype=torch.long)
     # Gather logits for candidate answer tokens: shape [batch, num_candidates]
     candidate_logits = logits.index_select(dim=-1, index=label_indices)
+    num_candidates = candidate_logits.shape[-1]
 
     if isinstance(targets, torch.Tensor) and targets.dtype == torch.long:
-        return F.cross_entropy(candidate_logits, targets)
-    if isinstance(targets, (list, tuple)) and targets and isinstance(targets[0], int):
+        target_tensor = targets
+    elif isinstance(targets, (list, tuple)) and targets and isinstance(targets[0], int):
         target_tensor = torch.tensor(targets, device=logits.device, dtype=torch.long)
-        return F.cross_entropy(candidate_logits, target_tensor)
+    else:
+        target_tensor = None
+
+    if target_tensor is not None:
+        ce_loss = F.cross_entropy(candidate_logits, target_tensor)
+        if loss_type == "ordinal" and num_candidates > 1:
+            probs = F.softmax(candidate_logits, dim=-1)
+            classes = torch.arange(num_candidates, device=logits.device, dtype=torch.float32)
+            scale = float(num_candidates - 1)
+            dist_sq = ((classes.unsqueeze(0) - target_tensor.unsqueeze(1).float()) / scale) ** 2
+            ordinal_loss = torch.sum(probs * dist_sq, dim=-1).mean()
+            return ce_loss + ordinal_penalty_weight * ordinal_loss
+        return ce_loss
 
     # Soft label probability distribution targets
     if isinstance(targets, torch.Tensor) and targets.dtype in (torch.float32, torch.float16, torch.bfloat16):
@@ -146,7 +162,16 @@ def compute_decision_loss(
         target_probs = torch.tensor(targets, device=logits.device, dtype=torch.float32)
 
     log_probs = F.log_softmax(candidate_logits, dim=-1)
-    return -torch.sum(target_probs * log_probs, dim=-1).mean()
+    ce_loss = -torch.sum(target_probs * log_probs, dim=-1).mean()
+    if loss_type == "ordinal" and num_candidates > 1:
+        probs = F.softmax(candidate_logits, dim=-1)
+        classes = torch.arange(num_candidates, device=logits.device, dtype=torch.float32)
+        target_indices = torch.sum(target_probs * classes, dim=-1, keepdim=True)
+        scale = float(num_candidates - 1)
+        dist_sq = ((classes.unsqueeze(0) - target_indices) / scale) ** 2
+        ordinal_loss = torch.sum(probs * dist_sq, dim=-1).mean()
+        return ce_loss + ordinal_penalty_weight * ordinal_loss
+    return ce_loss
 
 
 def export_adapter(

@@ -1,98 +1,100 @@
-# M2 Calibrated Local MVP Status
+# M2 calibrated local MVP status
 
-Status: **Complete; calibrated temperature scaling, workload-specific acceptance policies, exact binomial selective evaluation, and profile registry integrated and validated.**
+Status: **calibration, policy, and selective-decision machinery implemented and unit-tested; the
+M2 exit decision is not met.** The profiles this milestone originally fitted have been retired,
+and no approved workload currently passes the quality, calibration, and selective-error gates
+together.
 
----
-
-## 1. Implemented Architecture
-
-Per RFC 001 and ADR-04 (`JEV_AT_HOME_SPEC.md`):
-
-- **Calibration Profiles (`src/jah/calibration.py`, `configs/profiles/`)**:
-  - Implemented `CalibrationProfile` versioned schema capturing model ID, revision, precision, prompt version, label version, primitive, option cardinality range, temperature $T > 0$, acceptance policy, and evaluation evidence hashes.
-  - Strict compatibility validation: requests matching runtime metadata and question constraints are marked `calibration_status = "validated"`; unknown or mismatched profiles safely return `calibration_status = "uncalibrated"` and `disposition = "review"`.
-  - Directory profile registry loading in both standalone decision engine and FastAPI service (`/v1/evaluate`).
-
-- **Numerical Probability Calibration (`src/jah/scoring.py`, `src/jah/backends/huggingface.py`)**:
-  - `ScoredDecision.logits` records unnormalized label logits $z_i$ in FP32 from the model's final unpadded sequence position.
-  - FP32 numerically stable softmax over $z_i / T$ with pure Python / torch support via `rescale_logits`.
-  - 1D convex NLL optimization via golden-section search over $T \in [0.05, 10.0]$ on the frozen calibration partition.
-
-- **Acceptance Policy & Dispositions (`src/jah/policy.py`)**:
-  - Configurable `AcceptancePolicy`:
-    - `type = "threshold"`: evaluates confidence $\max_k p_k \ge \tau$ (for Choice, Boolean, Score). Above threshold $\implies \text{"accept"}$, below threshold $\implies \text{"review"}$.
-    - `type = "review_only"`: all decisions routed to human review, satisfying safety bounds for unvalidated or feasibility-only workloads (such as `support-routing-v1`).
-
-- **Calibration & Selective Decisions Metrics (`src/jah/calibration.py`, `src/jah/evaluation.py`)**:
-  - **Negative Log-Likelihood (NLL)** and **Multi-Class Brier Score** vs prevalence baseline.
-  - **10-Bin Equal-Count Expected Calibration Error (ECE)** per §7.
-  - **Coverage**: fraction of decisions automatically accepted.
-  - **Accepted Error Rate**: empirical error rate among accepted decisions.
-  - **Exact One-Sided 95% Clopper-Pearson Binomial Upper Bound**: computed via standard library bisection without external dependencies.
-  - **Statistical Sample Sufficiency**: §7 requires one-sided 95% upper bound on error $\le 0.05$. Exact binomial mathematics requires at least $n = 59$ accepted samples with 0 errors to certify an upper bound $\le 0.05$ ($1 - 0.05^{1/59} \approx 0.0495 \le 0.05$). The evaluation report flags `samples_sufficient_for_gate` explicitly, adhering to §7: *"Insufficient samples mean unvalidated, not pass."*
+Gate verdicts are rendered from artifacts into [EVIDENCE.md](EVIDENCE.md).
 
 ---
 
-## 2. Workload Calibration Profiles
+## 1. Implemented
 
-| Workload ID | Primitive | Method | Temperature $T$ | Policy Type | Threshold $\tau$ | Calibration Split Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| `document-relevance-v1` | `boolean` | Temperature scaling | 0.1000 | `threshold` | 0.85 | Validated (ECE $\le 0.05$, Brier $\le$ prevalence) |
-| `rubric-assessment-v1` | `score` | Temperature scaling | 0.1000 | `threshold` | 0.85 | Validated (ECE $\le 0.05$, Brier $\le$ prevalence) |
-| `support-routing-v1` | `choice` | Identity / review | 1.0000 | `review_only` | 0.90 | Review-only per workload specification |
+Per ADR-04.
 
----
-
-## 3. Measured Development Evaluation Results
-
-Generated on `evals/data/m1-suite.jsonl` (`development` split, 22 decisions):
-
-### Decision Quality & Calibration
-| Workload / Primitive | Metric | Direct Scorer | Generative Baseline | Calibration ECE | Brier Score | Prevalence Brier | Calibration Gate |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `document-relevance-v1` (Boolean) | Macro-F1 | **1.000** | 1.000 | $6.28 \times 10^{-9}$ | $3.15 \times 10^{-16}$ | 0.500 | **Pass** ($\le 0.05$) |
-| `rubric-assessment-v1` (Score) | Normalized MAE | **0.0029** | 0.0000 | 0.0077 | 0.00035 | 0.667 | **Pass** ($\le 0.05$) |
-| `support-routing-v1` (Choice) | Macro-F1 | 0.450 | 0.450 | 0.130 | 0.139 | 0.500 | Review-only |
-
-### Selective Decisions & Automation
-| Workload | Total | Accepted | Review | Coverage | Accepted Errors | Accepted Error Rate | 95% Exact Bound | Gate Verdict |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `document-relevance-v1` | 4 | 4 | 0 | **100%** | 0 | **0.0%** | 0.527 | Unvalidated ($n < 59$) |
-| `rubric-assessment-v1` | 6 | 6 | 0 | **100%** | 0 | **0.0%** | 0.393 | Unvalidated ($n < 59$) |
-| `support-routing-v1` | 12 | 0 | 12 | **0%** | 0 | **0.0%** | 1.000 | Pass (Safe review routing) |
+- **Versioned profiles** ([src/jah/calibration.py](src/jah/calibration.py)): `CalibrationProfile`
+  captures model ID, revision, precision, prompt version, label version, primitive, option
+  cardinality range, temperature, acceptance policy, and evaluation evidence. Requests matching
+  runtime metadata and question constraints return `calibration_status: "validated"`; unknown or
+  mismatched profiles return `"uncalibrated"` and `disposition: "review"`.
+- **Evidence gating** (`has_validated_evidence`): compatibility alone never promotes a profile. A
+  profile enables acceptance only with passing ECE, Brier, and selective gates, coverage at or
+  above 0.50, an accepted-error upper bound at or below 0.05, and at least 59 accepted
+  observations.
+- **Numerical calibration** ([src/jah/scoring.py](src/jah/scoring.py)): FP32 softmax over `z / T`
+  from the final unpadded position, with temperature fitted by golden-section search over NLL on
+  the calibration partition.
+- **Acceptance policy** ([src/jah/policy.py](src/jah/policy.py)): `threshold` and `review_only`.
+- **Metrics** ([src/jah/calibration.py](src/jah/calibration.py),
+  [src/jah/evaluation.py](src/jah/evaluation.py)): NLL, multi-class Brier against a prevalence
+  baseline, 10-bin equal-count ECE, coverage, accepted error rate, and an exact one-sided 95%
+  Clopper-Pearson upper bound computed by bisection.
+- **Sample sufficiency**: reports flag `samples_sufficient_for_gate` explicitly. An exact binomial
+  bound of 0.05 requires at least 59 error-free accepted observations, so smaller samples are
+  recorded as unvalidated rather than passed.
 
 ---
 
-## 4. Reproducible Run Sequence
+## 2. Retired profiles
+
+The three profiles fitted in the original M2 run have been moved to
+[configs/profiles/retired/](configs/profiles/retired/) and are excluded from every default
+registry. They were fitted on `evals/data/m1-suite.jsonl`, whose 141 rows were labeled by
+`qwen/qwen3.8-27b` and then scored by the backbone — a model family grading its own output, which
+ADR-06 excludes from evaluation ground truth.
+
+Two of the three fitted `temperature: 0.1`, the floor of the search range, driving every
+distribution to a one-hot; their recorded reliability bins show mean confidences of `1.0`. Sample
+counts were 6 and 4. The original M2 tables reported these as "Validated (ECE <= 0.05, Brier <=
+prevalence)". That claim is withdrawn.
+
+`evals/data/m1-suite.jsonl` is retained only as a fast smoke fixture covering all three
+primitives. [configs/evals/m1-suite.yaml](configs/evals/m1-suite.yaml) records this.
+
+---
+
+## 3. Current profiles
+
+The profiles in [configs/profiles/public/](configs/profiles/public/) are fitted on the calibration
+partition of the public human-labeled suite. All three are `review_only` and none carry validated
+acceptance evidence — coverage is 0.0 in every recorded run, so the selective-error gate has not
+been exercised at all.
+
+| Workload | Primitive | T | ECE | Brier | Prevalence Brier |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `banking77-16-intent-v1` | choice | 1.3522 | 0.047522 | 0.234752 | 0.929201 |
+| `wikiqa-answer-relevance-v1` | boolean | 0.7999 | 0.045374 | 0.299406 | 0.099623 |
+| `asap2-source-essay-v1` | score | 1.2162 | 0.094514 | 0.770769 | 0.748971 |
+
+Source: [artifacts/public/calibration-summary.json](artifacts/public/calibration-summary.json).
+
+---
+
+## 4. Remaining M2 exit work
+
+1. Correct the WikiQA base-rate failure; scalar temperature cannot (remediation plan, phase 2.1).
+2. Bring ASAP within the ordinal gates or declare it out of scope with evidence (phase 2.2).
+3. Attach profiles at evaluation time, sweep thresholds on the calibration split, publish
+   risk-coverage curves, and measure the accepted-error bound (phase 2.3).
+
+---
+
+## 5. Reproducible run sequence
 
 ```powershell
-# 1. Fit temperature scaling and generate calibrated profile artifacts
-.venv\Scripts\python.exe -m jah.evaluation calibrate `
-  --dataset evals/data/m1-suite.jsonl `
-  --output configs/profiles `
-  --summary artifacts/m2/calibration-summary.json
+# Fit temperature scaling on the public calibration partition.
+.venv\Scripts\jah-eval.exe calibrate `
+  --output configs/profiles/public `
+  --summary artifacts/public/calibration-summary.json
 
-# 2. Run calibrated direct evaluation on development
-.venv\Scripts\python.exe -m jah.evaluation run `
-  --backend direct `
-  --split development `
-  --profiles-dir configs/profiles `
-  --use-workload-profiles `
-  --output artifacts/m2/direct-development.json `
-  --predictions artifacts/m2/direct-development.jsonl
-
-# 3. Run generative evaluation on development
-.venv\Scripts\python.exe -m jah.evaluation run `
-  --backend generative `
-  --split development `
-  --output artifacts/m2/generative-development.json `
-  --predictions artifacts/m2/generative-development.jsonl
-
-# 4. Generate paired comparison report
-.venv\Scripts\python.exe -m jah.evaluation compare `
-  --direct-report artifacts/m2/direct-development.json `
-  --generative-report artifacts/m2/generative-development.json `
-  --direct-predictions artifacts/m2/direct-development.jsonl `
-  --generative-predictions artifacts/m2/generative-development.jsonl `
-  --output artifacts/m2/paired-comparison.json
+# Evaluate the development partition with those profiles attached.
+.venv\Scripts\jah-eval.exe run --backend direct --split development `
+  --workload banking77-16-intent-v1 `
+  --profiles-dir configs/profiles/public --use-workload-profiles `
+  --output artifacts/public/direct-development.json `
+  --predictions artifacts/public/direct-development.jsonl
 ```
+
+Defaults now resolve to the public suite (`evals/data/public/suite.jsonl`,
+`configs/evals/public-suite.yaml`, split seed `jah-public-v1`).

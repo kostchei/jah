@@ -1,0 +1,59 @@
+{
+  "profile": null,
+  "questions": {
+    "s01": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s01 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s02": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s02 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s03": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s03 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s04": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s04 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s05": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s05 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s06": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s06 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s07": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s07 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s08": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s08 answers the supplied question.",
+      "type": "boolean"
+    }
+  },
+  "state": {
+    "candidate_sentences": {
+      "s01": "After a short hiatus from the screen following her exit from Silk Stalkings, Kapture returned in 1997 to the small screen and USA Network.",
+      "s02": "She played lead roles in two USA Pictures Originals telemovies , Perfect Crime (based on a true story, also called Hide and Seek: The Joanne Jensen Story), which also starred Jasmine Guy and His Bodyguard .",
+      "s03": "Sergeant Lance eventually became Lieutenant Lance by the time Kapture left the series in 1995 to have her first child Madison.",
+      "s04": "She went on to make a few television guest appearances ( MacGyver , 1st & Ten , and as a contestant on The $100,000 Pyramid ) before she gained international exposure with her first major television role as Sergeant Rita Lee Lance in the television series Silk Stalkings .",
+      "s05": "She later starred in a few other independent film projects and theatre productions and had several television guest appearances.",
+      "s06": "Her latest is a supporting role in God's Ears , released in 2007.",
+      "s07": "During her time with the series, Kapture briefly sat in the director's chair, for two episodes.",
+      "s08": "Kapture's role as Rita, the other half of the two \"Sams\" for almost 5 years, cemented her popularity."
+    },
+    "document_title": "Mitzi Kapture",
+    "question": "what happened to Mitzi Kapture"
+  }
+}

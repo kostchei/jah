@@ -16,6 +16,7 @@ from transformers import AutoModelForMultimodalLM, AutoTokenizer
 
 from jah.compiler import compile_request
 from jah.m1_dataset import build_split_manifest, load_m1_dataset
+from jah.resource import configure_resource_limits
 from jah.training.adapter import (
     LoRAConfig,
     compute_decision_loss,
@@ -42,8 +43,18 @@ def train_adapter(
     device: str = "cuda",
     seed: int = 42,
     log_interval: int = 25,
+    loss_type: str = "cross_entropy",
+    ordinal_penalty_weight: float = 1.0,
+    resource_limit: float = 0.80,
+    no_resource_limits: bool = False,
 ) -> dict[str, Any]:
     """Train a LoRA adapter on decision scoring data and export the bundle."""
+    if not no_resource_limits:
+        configure_resource_limits(
+            max_total_gpu_fraction=resource_limit,
+            max_cpu_fraction=resource_limit,
+        )
+
     dataset_path = Path(dataset_path).resolve()
     output_dir = Path(output_dir).resolve()
     model_config_path = Path(model_config_path).resolve()
@@ -171,6 +182,8 @@ def train_adapter(
                         last_logits,
                         [target_idx],
                         q_compiled.label_token_ids,
+                        loss_type=loss_type,
+                        ordinal_penalty_weight=ordinal_penalty_weight,
                     )
                     loss_scaled = loss / gradient_accumulation_steps
                     loss_scaled.backward()
@@ -258,6 +271,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--output-dir", default="artifacts/adapters/qwen3.5-4b-public-v1")
     parser.add_argument("--log-interval", type=int, default=25)
+    parser.add_argument(
+        "--loss-type",
+        choices=["cross_entropy", "ordinal"],
+        default="cross_entropy",
+        help="Training loss: standard cross_entropy or distance-weighted ordinal cross_entropy",
+    )
+    parser.add_argument(
+        "--ordinal-penalty-weight",
+        type=float,
+        default=1.0,
+        help="Weight of the distance penalty when loss-type is ordinal",
+    )
+    parser.add_argument(
+        "--resource-limit",
+        type=float,
+        default=0.80,
+        help="Max fraction of system resources (CPU threads and GPU memory) to utilize (default: 0.80)",
+    )
+    parser.add_argument(
+        "--no-resource-limits",
+        action="store_true",
+        help="Disable automatic CPU thread throttling and GPU memory capping",
+    )
     return parser.parse_args(argv)
 
 
@@ -278,6 +314,10 @@ def main(argv: list[str] | None = None) -> int:
         max_input_tokens=args.max_input_tokens,
         device=args.device,
         log_interval=args.log_interval,
+        loss_type=args.loss_type,
+        ordinal_penalty_weight=args.ordinal_penalty_weight,
+        resource_limit=args.resource_limit,
+        no_resource_limits=args.no_resource_limits,
     )
     return 0
 

@@ -185,7 +185,25 @@ def test_profile_yaml_roundtrip(tmp_path: Path) -> None:
     assert registry["routing-v1"].temperature == 1.05
 
 
-def test_current_profiles_have_no_validated_acceptance_evidence() -> None:
-    registry = load_profile_registry(Path(__file__).resolve().parents[1] / "configs/profiles")
+def test_profile_validation_status() -> None:
+    registry = load_profile_registry(
+        Path(__file__).resolve().parents[1] / "configs/profiles/public"
+    )
     assert registry
-    assert all(not has_validated_evidence(profile) for profile in registry.values())
+    assert has_validated_evidence(registry["banking77-16-intent-v1"])
+    assert has_validated_evidence(registry["wikiqa-answer-relevance-v1"])
+    assert not has_validated_evidence(registry["asap2-source-essay-v1"])
+
+
+def test_retired_profiles_are_outside_every_default_registry() -> None:
+    """The degenerate M2 profiles must not be reachable from a default profiles directory."""
+    root = Path(__file__).resolve().parents[1]
+    retired = load_profile_registry(root / "configs/profiles/retired")
+    assert set(retired) == {
+        "document-relevance-v1",
+        "rubric-assessment-v1",
+        "support-routing-v1",
+    }
+    for directory in ("configs/profiles", "configs/profiles/public"):
+        loaded = load_profile_registry(root / directory)
+        assert not set(loaded) & set(retired), f"{directory} still exposes a retired profile"

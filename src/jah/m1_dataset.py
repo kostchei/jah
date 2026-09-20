@@ -56,6 +56,7 @@ class M1Example(StrictModel):
         "adjudicated-agreement",
         "adjudicated-resolution",
         "excluded",
+        "llm-reviewed",
     ]
     adjudicator_id: Identifier | None = None
     task_template_holdout: bool = False

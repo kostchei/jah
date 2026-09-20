@@ -15,7 +15,7 @@ def test_build_release_manifest(repo_root, tmp_path):
     manifest = build_release_manifest(
         "release-v0.1.0-rc1",
         model_config_path=repo_root / "configs/models/qwen3.5-4b.yaml",
-        profiles_dir=repo_root / "configs/profiles",
+        profiles_dir=repo_root / "configs/profiles/public",
         lockfile_path=repo_root / "uv.lock",
         output_path=output_path,
         rollback_release_id="release-v0.0.9",
@@ -28,7 +28,7 @@ def test_build_release_manifest(repo_root, tmp_path):
     # Offline verification should pass on pristine repo state
     verification = verify_offline_bundle(
         output_path,
-        profiles_dir=repo_root / "configs/profiles",
+        profiles_dir=repo_root / "configs/profiles/public",
         lockfile_path=repo_root / "uv.lock",
     )
     assert verification["valid"] is True
@@ -43,7 +43,7 @@ def test_verify_detects_lockfile_or_profile_tampering(repo_root, tmp_path):
     _ = build_release_manifest(
         "release-test",
         model_config_path=repo_root / "configs/models/qwen3.5-4b.yaml",
-        profiles_dir=repo_root / "configs/profiles",
+        profiles_dir=repo_root / "configs/profiles/public",
         lockfile_path=fake_lock,
         output_path=output_path,
     )
@@ -52,7 +52,7 @@ def test_verify_detects_lockfile_or_profile_tampering(repo_root, tmp_path):
     fake_lock.write_text("tampered content", encoding="utf-8")
     verification = verify_offline_bundle(
         output_path,
-        profiles_dir=repo_root / "configs/profiles",
+        profiles_dir=repo_root / "configs/profiles/public",
         lockfile_path=fake_lock,
     )
     assert verification["valid"] is False

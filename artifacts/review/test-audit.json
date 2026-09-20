@@ -1,0 +1,46 @@
+{
+  "command": "audit",
+  "control_arm": {
+    "dispute_rate": 0.0,
+    "disputed_count": 0,
+    "passed": true,
+    "sample_size": 10
+  },
+  "created_at": "2026-09-20T11:53:27.160354+00:00",
+  "provenance": {
+    "endpoint": "http://localhost:1234/v1",
+    "ground_truth": false,
+    "limitation": "The reviewer (qwen/qwen3.8-27b) and the backbone (Qwen/Qwen3.5-4B) are the same model family, so their errors are correlated. Reviewer agreement is therefore weak evidence.",
+    "prompt_version": "review-v1",
+    "reviewer_model_id": "qwen/qwen3.8-27b",
+    "seed": 42,
+    "temperature": 0.0
+  },
+  "quarantined_examples": [],
+  "run_id": "review-audit-1789905207",
+  "schema_version": 1,
+  "verdicts": [
+    {
+      "confidence": 0.0,
+      "example_id": "banking77-07c634f5d991ebf42fe44e5d",
+      "quarantine_recommended": false,
+      "question_id": "decision",
+      "reasoning": "Audit query failed or response malformed: timed out",
+      "system_prediction": "beneficiary_not_allowed",
+      "upstream_reference": "balance_not_updated_after_bank_transfer",
+      "verdict": "unclear",
+      "workload_id": "banking77-16-intent-v1"
+    },
+    {
+      "confidence": 0.0,
+      "example_id": "banking77-0dd2e738fb15f8c53763db5a",
+      "quarantine_recommended": false,
+      "question_id": "decision",
+      "reasoning": "Audit query failed or response malformed: HTTP Error 400: Bad Request",
+      "system_prediction": "card_linking",
+      "upstream_reference": "card_arrival",
+      "verdict": "unclear",
+      "workload_id": "banking77-16-intent-v1"
+    }
+  ]
+}

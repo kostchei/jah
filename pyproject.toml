@@ -35,18 +35,23 @@ dev = [
 jah-compat = "jah.compat:main"
 jah-benchmark = "jah.benchmark:main"
 jah-eval = "jah.evaluation:main"
+jah-report = "jah.report:main"
 jah-order-bias = "jah.diagnostics.order_bias:main"
 jah-serve = "jah.service:main"
 jah-public-data = "jah.public_data:main"
 jah-train = "jah.training.train:main"
+jah-review = "jah.review:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jah"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q -m 'not gpu'"
 pythonpath = ["src", "."]
 testpaths = ["tests"]
+markers = [
+  "gpu: requires the pinned backbone resident on a CUDA device; run with `-m gpu`",
+]
 
 [tool.ruff]
 line-length = 100

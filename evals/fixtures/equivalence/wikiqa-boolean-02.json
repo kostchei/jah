@@ -1,0 +1,23 @@
+{
+  "profile": null,
+  "questions": {
+    "s01": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s01 answers the supplied question.",
+      "type": "boolean"
+    },
+    "s02": {
+      "instructions": "Judge whether the identified candidate sentence answers the supplied question. Topical similarity alone is insufficient.",
+      "proposition": "Candidate sentence s02 answers the supplied question.",
+      "type": "boolean"
+    }
+  },
+  "state": {
+    "candidate_sentences": {
+      "s01": "The \"video\" in \" video game \" traditionally refers to a raster display device.",
+      "s02": "The evolution of video games represents a tangled web of several different industries, including scientific , computer , arcade , and consumer electronics ."
+    },
+    "document_title": "First video game",
+    "question": "what is the first video game ever"
+  }
+}

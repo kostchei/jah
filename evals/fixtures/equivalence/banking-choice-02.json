@@ -1,0 +1,98 @@
+{
+  "profile": null,
+  "questions": {
+    "coarse_group": {
+      "instructions": "Select the coarse handling group for this customer query.",
+      "options": [
+        {
+          "description": "Ordering, delivery, activation, or expiry of a card.",
+          "id": "card_lifecycle"
+        },
+        {
+          "description": "Transfers, top-ups, fees, or payment acceptance.",
+          "id": "payments"
+        },
+        {
+          "description": "Eligibility, identity, linking, or account access.",
+          "id": "access"
+        },
+        {
+          "description": "No listed group applies or the evidence is insufficient.",
+          "id": "other"
+        }
+      ],
+      "type": "choice"
+    },
+    "intent": {
+      "instructions": "Select the banking intent expressed by this customer query. Choose exactly one of the supplied intents.",
+      "options": [
+        {
+          "description": "activate my card",
+          "id": "activate_my_card"
+        },
+        {
+          "description": "age limit",
+          "id": "age_limit"
+        },
+        {
+          "description": "apple pay or google pay",
+          "id": "apple_pay_or_google_pay"
+        },
+        {
+          "description": "atm support",
+          "id": "atm_support"
+        },
+        {
+          "description": "automatic top up",
+          "id": "automatic_top_up"
+        },
+        {
+          "description": "balance not updated after bank transfer",
+          "id": "balance_not_updated_after_bank_transfer"
+        },
+        {
+          "description": "balance not updated after cheque or cash deposit",
+          "id": "balance_not_updated_after_cheque_or_cash_deposit"
+        },
+        {
+          "description": "beneficiary not allowed",
+          "id": "beneficiary_not_allowed"
+        },
+        {
+          "description": "cancel transfer",
+          "id": "cancel_transfer"
+        },
+        {
+          "description": "card about to expire",
+          "id": "card_about_to_expire"
+        },
+        {
+          "description": "card acceptance",
+          "id": "card_acceptance"
+        },
+        {
+          "description": "card arrival",
+          "id": "card_arrival"
+        },
+        {
+          "description": "card delivery estimate",
+          "id": "card_delivery_estimate"
+        },
+        {
+          "description": "card linking",
+          "id": "card_linking"
+        },
+        {
+          "description": "card not working",
+          "id": "card_not_working"
+        },
+        {
+          "description": "card payment fee charged",
+          "id": "card_payment_fee_charged"
+        }
+      ],
+      "type": "choice"
+    }
+  },
+  "state": "How old can one use your service?"
+}

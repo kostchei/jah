@@ -1,60 +1,98 @@
-# M4 Adaptation Status
+# M4 adaptation status
 
-Status: **Complete; LoRA parameter-efficient adaptation engine (`jah-train`), dynamic module injection (`q_proj`, `v_proj`, `lm_head`), activation gradient checkpointing, and adapted evaluation verified. Decision head fine-tuning yields +8.75% accuracy and +0.0986 Macro-F1 lift on held-out development data.**
+Status: **adaptation engine implemented and exercised; development-split lift measured on one of
+three workloads; the M4 exit decision is not yet supported.**
 
----
-
-## 1. Implemented Architecture
-
-Per RFC 001 and ADR-05 (`JEV_AT_HOME_SPEC.md`):
-
-### LoRA Adaptation Engine
-- **Module Injection & Removal (`src/jah/training/adapter.py`)**:
-  - `inject_lora(model, config)` traverses arbitrary PyTorch module hierarchies, replacing targeted `nn.Linear` layers (`q_proj`, `v_proj`, and `lm_head`) with `LoRALinear` modules.
-  - Frozen base model: 4.54B parameters remain non-trainable (`requires_grad = False`).
-  - Low-rank adapters ($r=8$, $\alpha=16.0$): 2,924,544 trainable parameters (**0.064%** of backbone).
-  - Preserves base layer device and dtype (BF16 on CUDA).
-- **Candidate-Restricted Decision Objective (`src/jah/training/adapter.py`)**:
-  - Restricts cross-entropy loss to tokenizer-verified candidate decision tokens:
-    $$\mathcal{L}_{CE} = -\sum_{c \in \mathcal{C}} y_c \log p_c$$
-- **Training Runner CLI (`jah-train`, `src/jah/training/train.py`)**:
-  - Memory-safe training with PyTorch gradient checkpointing (`model.gradient_checkpointing_enable()`) and `enable_input_require_grads()`.
-  - Max input sequence token filtering (default: 2,048 tokens) preventing quadratic attention allocation spikes.
-  - Gradient accumulation, gradient clipping (`max_grad_norm = 1.0`), and deterministic dataset shuffling.
-  - Export pipeline producing versioned `adapter_weights.pt` and `adapter_manifest.json`.
-- **Inference & Evaluation Integration (`src/jah/backends/huggingface.py`, `src/jah/evaluation.py`)**:
-  - `HuggingFaceDirectLogitBackend` dynamically attaches and initializes adapter weights when `adapter_dir` is supplied.
-  - `jah-eval run --adapter-dir <path>` evaluates adapted models with identical CLI workflow.
+The specification's M4 exit decision is "beats the frozen baseline on held-out tasks at acceptable
+inference cost". A single workload's development partition is held-out data, but it is not
+"tasks", and the ordinal and boolean workloads were not re-measured after adaptation. Gate
+verdicts for every artifact referenced here are rendered in [EVIDENCE.md](EVIDENCE.md).
 
 ---
 
-## 2. Measured Benchmark Evidence (Head Adaptation vs. Frozen Baseline)
+## 1. Implemented
 
-Evaluated on the **`banking77-16-intent-v1` development partition** (297 held-out human decisions, 16-way intent classification) on the reference host (NVIDIA GeForce RTX 4090, BF16):
+Per ADR-05.
 
-| Metric | Frozen Baseline (Direct Logits) | Adapted LoRA Head (`qwen3.5-4b-public-head-v1`) | Absolute Change ($\Delta$) | Specification Gate | Verdict |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Accuracy** | 82.83% | **91.58%** | **+8.75%** | - | **Substantial Lift** |
-| **Balanced Accuracy** | 82.19% | **91.42%** | **+9.23%** | - | **Substantial Lift** |
-| **Macro-F1** | 0.8126 | **0.9112** | **+0.0986** | $\ge 0.85$ | **PASS** |
-| **Brier Score** | 0.2646 | **0.1525** | **-42.4% error** | $\le \text{Prevalence}$ | **PASS** |
-| **Negative Log-Likelihood** | 0.7373 | **0.4440** | **-39.8% NLL** | - | **Sharper Calibration** |
-| **Median Request Latency** | 89.59 ms | **88.51 ms** | -1.08 ms | - | **Sub-100ms Preserved** |
-| **$P_{95}$ Request Latency** | 118.13 ms | **114.48 ms** | -3.65 ms | $\le 2000\text{ ms}$ | **PASS** |
+### Adaptation engine
 
-Artifact evidence:
-- Trained Adapter Bundle: [artifacts/adapters/qwen3.5-4b-public-head-v1/](artifacts/adapters/qwen3.5-4b-public-head-v1/)
-- Training Telemetry: [artifacts/adapters/qwen3.5-4b-public-head-v1/training-report.json](artifacts/adapters/qwen3.5-4b-public-head-v1/training-report.json)
-- Baseline Evaluation: [artifacts/public/baseline-banking77-dev.json](artifacts/public/baseline-banking77-dev.json)
-- Adapted Head Evaluation: [artifacts/public/adapted-banking77-dev.json](artifacts/public/adapted-banking77-dev.json)
+- **Module injection** ([src/jah/training/adapter.py](src/jah/training/adapter.py)):
+  `inject_lora` walks arbitrary module hierarchies and replaces targeted `nn.Linear` layers
+  (`q_proj`, `v_proj`, `lm_head`) with `LoRALinear`. The base model stays frozen
+  (`requires_grad = False`), and base layer device and dtype are preserved.
+- **Rank-8 adapters** (alpha 16.0): 2,924,544 trainable parameters, 0.064% of the backbone.
+- **Candidate-restricted objective**: cross-entropy over tokenizer-verified single-token candidate
+  labels only. Hard labels and soft label distributions are both supported.
+- **Training runner** (`jah-train`, [src/jah/training/train.py](src/jah/training/train.py)):
+  gradient checkpointing, `enable_input_require_grads`, input-length filtering (default 2,048
+  tokens), gradient accumulation, gradient clipping, deterministic shuffling, and export of
+  `adapter_weights.pt` plus `adapter_manifest.json`.
+- **Split discipline**: training rows are filtered to the `train` assignment of the split manifest
+  before any workload filter or sampling, so the development partition used below is genuinely
+  held out.
+- **Inference integration**: `HuggingFaceDirectLogitBackend` attaches adapter weights when
+  `adapter_dir` is supplied, and `jah-eval run --adapter-dir <path>` evaluates the adapted model.
+  A directory without `adapter_manifest.json` raises rather than silently scoring unadapted
+  (ADR-06).
 
 ---
 
-## 3. Test Suite Verification
+## 2. Measured: adapted head against frozen baseline
 
-- `pytest` executes **117 tests with 0 failures** across all modules:
-  - `tests/test_train.py` (2 passed)
-  - `tests/test_adapter.py` (6 passed)
-  - `tests/test_batch_equivalence.py` (4 passed)
-  - Prior suites (105 passed)
-- `ruff check .`: 0 warnings, formatting strictly compliant.
+`banking77-16-intent-v1`, **development** partition, 297 decisions, RTX 4090, BF16.
+
+| Measure | Frozen baseline | Adapted head | Change |
+| --- | ---: | ---: | ---: |
+| Accuracy | 0.828283 | 0.915825 | +0.087542 |
+| Balanced accuracy | 0.821928 | 0.914154 | +0.092226 |
+| Macro-F1 | 0.812567 | 0.911191 | +0.098624 |
+| Brier score | 0.264617 | 0.152478 | -0.112139 |
+| NLL | 0.737278 | 0.444016 | -0.293262 |
+| ECE | 0.054125 | 0.054195 | +0.000070 |
+| Coverage | 0.0 | 0.0 | unchanged |
+| Median request latency (ms) | 89.59 | 88.51 | -1.08 |
+| P95 request latency (ms) | 118.13 | 114.48 | -3.65 |
+
+Recorded gate state in both artifacts:
+
+- `gate_brier_passed: true` — both runs beat the prevalence baseline of 0.929201.
+- `gate_ece_passed: false` — both runs exceed the 0.05 reliability gate. Adaptation did not
+  change this.
+- `selective.gate_passed: false`, `samples_sufficient_for_gate: false` — coverage is 0.0 because
+  no calibration profile was attached at evaluation time, so the accepted-error gate was never
+  exercised.
+
+Macro-F1 of 0.911191 exceeds the 0.85 product target **on development data for one workload**.
+The specification requires that target per approved workload on the locked test, which has not
+been opened.
+
+Artifacts:
+[baseline-banking77-dev.json](artifacts/public/baseline-banking77-dev.json),
+[adapted-banking77-dev.json](artifacts/public/adapted-banking77-dev.json),
+[training-report.json](artifacts/adapters/qwen3.5-4b-public-head-v1/training-report.json).
+
+---
+
+## 3. Known limits of this result
+
+1. **Final training loss is 5e-05 over 999 samples.** The adapter has largely memorized its
+   training partition. The development lift is still real, but the margin between memorization
+   and generalization has not been probed with a task or template holdout.
+2. **One workload.** The ordinal (`asap2-source-essay-v1`) and boolean
+   (`wikiqa-answer-relevance-v1`) workloads were not re-evaluated after adaptation. Both fail
+   calibration gates in their frozen state.
+3. **No uncertainty interval.** The accuracy difference of +0.0875 carries no bootstrap interval
+   grouped by source group, which the specification requires for quality differences.
+4. **Contamination unquantified.** See [WALKTHROUGH.md](WALKTHROUGH.md) section 4.
+
+Remediation for items 2 and 3 is scoped in [REMEDIATION_PLAN.md](REMEDIATION_PLAN.md), phases 2
+and 3.
+
+---
+
+## 4. Verification
+
+- Default suite: mocked backends, seconds to run.
+- `pytest -m gpu`: adapter attachment and manifest failure behavior against the real backbone.
+- `ruff check .`
+- `jah-report check`: fails if [EVIDENCE.md](EVIDENCE.md) drifts from the artifacts.

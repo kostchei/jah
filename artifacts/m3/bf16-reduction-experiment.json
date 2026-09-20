@@ -1,0 +1,16 @@
+{
+  "bf16_reduced_reduction_default_on": {
+    "allow_bf16_reduced_precision_reduction": true,
+    "argmax_flips": 1,
+    "decisions": 37,
+    "max_logit_deviation": 0.25,
+    "max_probability_deviation": 0.05175302640713442
+  },
+  "fp32_reduction": {
+    "allow_bf16_reduced_precision_reduction": false,
+    "argmax_flips": 0,
+    "decisions": 37,
+    "max_logit_deviation": 0.125,
+    "max_probability_deviation": 0.030967127512041892
+  }
+}

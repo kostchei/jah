@@ -21,6 +21,7 @@ from jah.calibration import (
     compute_prevalence_brier,
     compute_selective_metrics,
     fit_temperature_scaling,
+    fit_vector_scaling,
     load_profile_registry,
     save_profile,
 )
@@ -28,7 +29,8 @@ from jah.compiler import compile_request
 from jah.engine import DecisionEngine, EngineConfig
 from jah.m1_dataset import build_split_manifest, load_m1_dataset, validate_m1_suite
 from jah.policy import AcceptancePolicy, fit_acceptance_threshold
-from jah.schemas import ScoreAnswer
+from jah.resource import configure_resource_limits, throttle
+from jah.schemas import BooleanAnswer, ChoiceAnswer, ScoreAnswer
 from jah.workload import git_commit_sha, load_yaml, sha256_file, stable_json_sha256
 
 
@@ -143,10 +145,30 @@ def run_evaluation(args: argparse.Namespace) -> int:
     ]
     if getattr(args, "workload", None):
         selected = [e for e in selected if e.workload_id == args.workload]
+    if getattr(args, "exclude_reviewed_quarantine", None):
+        q_path = root / args.exclude_reviewed_quarantine
+        if q_path.exists():
+            with q_path.open("r", encoding="utf-8") as handle:
+                q_data = json.load(handle)
+            quarantined_ids = {item.split(":")[0] for item in q_data.get("quarantined_examples", [])}
+            initial_count = len(selected)
+            selected = [e for e in selected if e.example_id not in quarantined_ids]
+            excluded_count = initial_count - len(selected)
+            print(
+                f"Quarantine exclusion applied: removed {excluded_count} examples based on {q_path}",
+                flush=True,
+            )
     if getattr(args, "max_examples", None):
         selected = selected[: args.max_examples]
     if not selected:
         raise ValueError(f"split {args.split!r} contains no examples")
+
+    if not getattr(args, "no_resource_limits", False):
+        res_limits = configure_resource_limits(
+            max_total_gpu_fraction=getattr(args, "resource_limit", 0.80),
+            max_cpu_fraction=getattr(args, "resource_limit", 0.80),
+        )
+        print(f"Resource limits configured: {res_limits}", flush=True)
 
     model_path = root / args.model_config
     model_config = load_yaml(model_path)
@@ -177,6 +199,12 @@ def run_evaluation(args: argparse.Namespace) -> int:
         ),
     )
 
+    predictions_path = root / args.predictions
+    predictions_path.parent.mkdir(parents=True, exist_ok=True)
+    resume = getattr(args, "resume", False)
+    chunk_size = getattr(args, "chunk_size", 25)
+    throttle_ms = getattr(args, "throttle_ms", 5.0)
+
     rows = []
     request_latencies = []
     grouped_references: dict[tuple[str, str], list[str]] = defaultdict(list)
@@ -190,83 +218,150 @@ def run_evaluation(args: argparse.Namespace) -> int:
     calibrated_dispositions: dict[tuple[str, str], list[str]] = defaultdict(list)
     option_cardinalities: dict[tuple[str, str], int] = {}
 
-    total_sel = len(selected)
-    for idx, example in enumerate(selected):
-        if (idx + 1) % 500 == 0 or idx + 1 == total_sel:
-            print(f"Evaluation scoring: {idx + 1}/{total_sel} examples...", flush=True)
-        req = example.request
-        if getattr(args, "use_workload_profiles", False):
-            req = example.request.model_copy(update={"profile": example.workload_id})
-
-        started = time.perf_counter()
-        response = engine.evaluate(req, request_id=f"eval_{example.example_id}")
-        request_latencies.append((time.perf_counter() - started) * 1_000)
-        for question_id, question in req.questions.items():
-            answer = response.answers[question_id]
-            reference = example.reference_answers[question_id]
-            group = (example.workload_id, question.type)
-
-            if isinstance(answer, ScoreAnswer):
-                reference_level = next(level for level in question.levels if level.id == reference)
-                value_range = question.levels[-1].value - question.levels[0].value
-                if value_range <= 0:
-                    raise ValueError(f"{example.example_id}/{question_id}: invalid score range")
-                score_errors[example.workload_id].append(
-                    abs(answer.expected_value - reference_level.value) / value_range
-                )
-                prediction = answer.level_id
-                reference_index = next(
-                    index for index, level in enumerate(question.levels) if level.id == reference
-                )
-                prediction_index = next(
-                    index
-                    for index, level in enumerate(question.levels)
-                    if level.id == prediction
-                )
-                score_pairs[example.workload_id].append(
-                    (reference_index, prediction_index, len(question.levels))
-                )
-                lvl_ids = [lvl.id for lvl in question.levels]
-                probs = [answer.probabilities[lid] for lid in lvl_ids]
-                t_idx = lvl_ids.index(reference)
-                opt_len = len(lvl_ids)
-            else:
-                prediction = "true" if getattr(answer, "value", None) is True else (
-                    "false" if getattr(answer, "value", None) is False else answer.value
-                )
-                grouped_references[group].append(reference)
-                grouped_predictions[group].append(prediction)
-                if question.type == "boolean":
-                    probs = [answer.probabilities["false"], answer.probabilities["true"]]
-                    t_idx = 1 if reference == "true" else 0
-                    opt_len = 2
-                else:
-                    opt_ids = [opt.id for opt in question.options]
-                    probs = [answer.probabilities[oid] for oid in opt_ids]
-                    t_idx = opt_ids.index(reference)
-                    opt_len = len(opt_ids)
-
-            calibrated_probs[group].append(probs)
-            calibrated_targets[group].append(t_idx)
-            calibrated_confs[group].append(max(probs))
-            is_correct = 1 if prediction == reference else 0
-            calibrated_accs[group].append(is_correct)
-            calibrated_dispositions[group].append(answer.disposition)
-            option_cardinalities[group] = opt_len
-
-            rows.append(
-                {
-                    "example_id": example.example_id,
-                    "question_id": question_id,
-                    "workload_id": example.workload_id,
-                    "primitive": question.type,
-                    "reference": reference,
-                    "prediction": prediction,
-                    "answer": answer.model_dump(mode="json"),
-                    "request_total_ms": response.timing_ms.total,
-                    "inference_ms": response.timing_ms.inference,
-                }
+    def _record_decision(example, question_id, question, answer, req_total_ms, inf_ms):
+        reference = example.reference_answers[question_id]
+        group = (example.workload_id, question.type)
+        if isinstance(answer, ScoreAnswer):
+            reference_level = next(level for level in question.levels if level.id == reference)
+            value_range = question.levels[-1].value - question.levels[0].value
+            if value_range <= 0:
+                raise ValueError(f"{example.example_id}/{question_id}: invalid score range")
+            score_errors[example.workload_id].append(
+                abs(answer.expected_value - reference_level.value) / value_range
             )
+            prediction = answer.level_id
+            reference_index = next(
+                index for index, level in enumerate(question.levels) if level.id == reference
+            )
+            prediction_index = next(
+                index
+                for index, level in enumerate(question.levels)
+                if level.id == prediction
+            )
+            score_pairs[example.workload_id].append(
+                (reference_index, prediction_index, len(question.levels))
+            )
+            lvl_ids = [lvl.id for lvl in question.levels]
+            probs = [answer.probabilities[lid] for lid in lvl_ids]
+            t_idx = lvl_ids.index(reference)
+            opt_len = len(lvl_ids)
+        else:
+            prediction = "true" if getattr(answer, "value", None) is True else (
+                "false" if getattr(answer, "value", None) is False else answer.value
+            )
+            grouped_references[group].append(reference)
+            grouped_predictions[group].append(prediction)
+            if question.type == "boolean":
+                probs = [answer.probabilities["false"], answer.probabilities["true"]]
+                t_idx = 1 if reference == "true" else 0
+                opt_len = 2
+            else:
+                opt_ids = [opt.id for opt in question.options]
+                probs = [answer.probabilities[oid] for oid in opt_ids]
+                t_idx = opt_ids.index(reference)
+                opt_len = len(opt_ids)
+
+        calibrated_probs[group].append(probs)
+        calibrated_targets[group].append(t_idx)
+        calibrated_confs[group].append(max(probs))
+        is_correct = 1 if prediction == reference else 0
+        calibrated_accs[group].append(is_correct)
+        calibrated_dispositions[group].append(answer.disposition)
+        option_cardinalities[group] = opt_len
+
+        row = {
+            "example_id": example.example_id,
+            "question_id": question_id,
+            "workload_id": example.workload_id,
+            "primitive": question.type,
+            "reference": reference,
+            "prediction": prediction,
+            "answer": answer.model_dump(mode="json"),
+            "request_total_ms": req_total_ms,
+            "inference_ms": inf_ms,
+        }
+        rows.append(row)
+        return row
+
+    existing_rows_by_example: dict[str, list[dict]] = defaultdict(list)
+    if resume and predictions_path.exists():
+        with predictions_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                    existing_rows_by_example[r["example_id"]].append(r)
+                except Exception:
+                    continue
+        if existing_rows_by_example:
+            print(f"Resuming evaluation: found {len(existing_rows_by_example)} existing examples in {predictions_path}", flush=True)
+
+    example_map = {e.example_id: e for e in selected}
+    for ex_id, row_list in existing_rows_by_example.items():
+        if ex_id in example_map:
+            ex = example_map[ex_id]
+            for r in row_list:
+                qid = r["question_id"]
+                if qid in ex.request.questions:
+                    q = ex.request.questions[qid]
+                    ans_data = r["answer"]
+                    if q.type == "score":
+                        ans = ScoreAnswer.model_validate(ans_data)
+                    elif q.type == "choice":
+                        ans = ChoiceAnswer.model_validate(ans_data)
+                    else:
+                        ans = BooleanAnswer.model_validate(ans_data)
+                    _record_decision(ex, qid, q, ans, r.get("request_total_ms", 0.0), r.get("inference_ms", 0.0))
+                    request_latencies.append(r.get("request_total_ms", 0.0))
+
+    pred_mode = "a" if (resume and existing_rows_by_example) else "w"
+    pred_handle = predictions_path.open(pred_mode, encoding="utf-8", newline="\n")
+
+    total_sel = len(selected)
+    resumed_count = len(existing_rows_by_example)
+    new_count = 0
+    try:
+        for idx, example in enumerate(selected):
+            if example.example_id in existing_rows_by_example:
+                continue
+
+            req = example.request
+            if getattr(args, "use_workload_profiles", False):
+                req = example.request.model_copy(update={"profile": example.workload_id})
+
+            started = time.perf_counter()
+            response = engine.evaluate(req, request_id=f"eval_{example.example_id}")
+            tot_ms = (time.perf_counter() - started) * 1_000
+            request_latencies.append(tot_ms)
+
+            for question_id, question in req.questions.items():
+                answer = response.answers[question_id]
+                row = _record_decision(
+                    example,
+                    question_id,
+                    question,
+                    answer,
+                    response.timing_ms.total,
+                    response.timing_ms.inference,
+                )
+                pred_handle.write(json.dumps(row, sort_keys=True) + "\n")
+
+            pred_handle.flush()
+            new_count += 1
+            if throttle_ms > 0:
+                throttle(throttle_ms)
+
+            if (new_count > 0 and new_count % chunk_size == 0) or (idx + 1 == total_sel):
+                pct = (idx + 1) / total_sel * 100
+                print(
+                    f"Evaluation progress: {idx + 1}/{total_sel} ({pct:.1f}%) "
+                    f"[{resumed_count} resumed, {new_count} computed]...",
+                    flush=True,
+                )
+    finally:
+        pred_handle.close()
 
     metrics = {
         f"{workload}/{primitive}": _classification_metrics(
@@ -526,12 +621,43 @@ def run_calibration(args: argparse.Namespace) -> int:
     calibration_examples = [
         e for e in examples if manifest["assignments"][e.example_id] == "calibration"
     ]
-    if not calibration_examples:
-        raise ValueError("calibration split contains no examples")
+    if not getattr(args, "no_resource_limits", False):
+        res_limits = configure_resource_limits(
+            max_total_gpu_fraction=getattr(args, "resource_limit", 0.80),
+            max_cpu_fraction=getattr(args, "resource_limit", 0.80),
+        )
+        print(f"Resource limits configured: {res_limits}", flush=True)
 
+    cache_path = root / getattr(args, "cache_file", "artifacts/public/calibration_cache.jsonl")
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+    cache: dict[str, list[dict]] = defaultdict(list)
+    if cache_path.exists():
+        with cache_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                    cache[rec["example_id"]].append(rec)
+                except Exception:
+                    continue
+        if cache:
+            print(f"Loaded {len(cache)} cached examples from {cache_path}", flush=True)
+
+    workload_filter = getattr(args, "workload", None)
+    if workload_filter:
+        calibration_examples = [e for e in calibration_examples if e.workload_id == workload_filter]
+        if not calibration_examples:
+            raise ValueError(f"no calibration examples match workload '{workload_filter}'")
+
+    missing = [e for e in calibration_examples if e.example_id not in cache]
     model_path = root / args.model_config
     model_config = load_yaml(model_path)
-    backend = load_backend("direct", model_config)
+    backend = None
+    if missing:
+        backend = load_backend("direct", model_config)
 
     # Group data by workload
     workload_data: dict[str, dict] = defaultdict(lambda: {
@@ -545,50 +671,112 @@ def run_calibration(args: argparse.Namespace) -> int:
         "public_benchmark": False,
     })
 
+    chunk_size = getattr(args, "chunk_size", 25)
+    throttle_ms = getattr(args, "throttle_ms", 5.0)
     total_cal = len(calibration_examples)
-    for idx, example in enumerate(calibration_examples):
-        if (idx + 1) % 250 == 0 or idx + 1 == total_cal:
-            print(f"Calibration scoring: {idx + 1}/{total_cal} examples...", flush=True)
-        compiled = compile_request(example.request, tokenizer=backend.tokenizer)
-        for q_compiled in compiled:
-            question_id = q_compiled.question_id
-            question = example.request.questions[question_id]
-            measurement = backend.score(q_compiled)
-            reference = example.reference_answers[question_id]
+    cached_count = 0
+    new_scored = 0
+
+    cache_handle = cache_path.open("a", encoding="utf-8", newline="\n")
+    try:
+        for idx, example in enumerate(calibration_examples):
             w_id = example.workload_id
             w_data = workload_data[w_id]
-            w_data["primitive"] = question.type
-            w_data["public_benchmark"] |= example.public_source is not None
-
-            if question.type == "boolean":
-                option_ids = ("false", "true")
-                w_data["option_ids"] = option_ids
-                target_idx = 1 if reference == "true" else 0
-                logits_vec = [measurement.decision.logits["false"], measurement.decision.logits["true"]]
-            elif question.type == "choice":
-                option_ids = tuple(opt.id for opt in question.options)
-                w_data["option_ids"] = option_ids
-                target_idx = option_ids.index(reference)
-                logits_vec = [measurement.decision.logits[opt_id] for opt_id in option_ids]
-            elif question.type == "score":
-                option_ids = tuple(lvl.id for lvl in question.levels)
-                w_data["option_ids"] = option_ids
-                w_data["option_values"] = tuple(lvl.value for lvl in question.levels)
-                target_idx = option_ids.index(reference)
-                logits_vec = [measurement.decision.logits[lvl_id] for lvl_id in option_ids]
+            if example.example_id in cache:
+                for rec in cache[example.example_id]:
+                    w_data["primitive"] = rec["primitive"]
+                    w_data["option_ids"] = tuple(rec["option_ids"])
+                    if rec.get("option_values"):
+                        w_data["option_values"] = tuple(rec["option_values"])
+                    w_data["public_benchmark"] |= rec.get("public_benchmark", False)
+                    w_data["logits_list"].append(rec["logits"])
+                    w_data["targets"].append(rec["target"])
+                    w_data["confidences_raw"].append(rec["confidence_raw"])
+                    w_data["accuracies_raw"].append(rec["accuracy_raw"])
+                cached_count += 1
             else:
-                continue
+                compiled = compile_request(example.request, tokenizer=backend.tokenizer)
+                for q_compiled in compiled:
+                    question_id = q_compiled.question_id
+                    question = example.request.questions[question_id]
+                    measurement = backend.score(q_compiled)
+                    reference = example.reference_answers[question_id]
+                    w_data["primitive"] = question.type
+                    w_data["public_benchmark"] |= example.public_source is not None
 
-            w_data["logits_list"].append(logits_vec)
-            w_data["targets"].append(target_idx)
-            raw_probs = measurement.decision.probabilities
-            raw_pred = measurement.decision.selected_id
-            w_data["confidences_raw"].append(max(raw_probs.values()))
-            w_data["accuracies_raw"].append(1 if raw_pred == reference else 0)
+                    if question.type == "boolean":
+                        option_ids = ("false", "true")
+                        w_data["option_ids"] = option_ids
+                        target_idx = 1 if reference == "true" else 0
+                        logits_vec = [measurement.decision.logits["false"], measurement.decision.logits["true"]]
+                        opt_vals = None
+                    elif question.type == "choice":
+                        option_ids = tuple(opt.id for opt in question.options)
+                        w_data["option_ids"] = option_ids
+                        target_idx = option_ids.index(reference)
+                        logits_vec = [measurement.decision.logits[opt_id] for opt_id in option_ids]
+                        opt_vals = None
+                    elif question.type == "score":
+                        option_ids = tuple(lvl.id for lvl in question.levels)
+                        w_data["option_ids"] = option_ids
+                        w_data["option_values"] = tuple(lvl.value for lvl in question.levels)
+                        target_idx = option_ids.index(reference)
+                        logits_vec = [measurement.decision.logits[lvl_id] for lvl_id in option_ids]
+                        opt_vals = list(w_data["option_values"])
+                    else:
+                        continue
+
+                    w_data["logits_list"].append(logits_vec)
+                    w_data["targets"].append(target_idx)
+                    raw_probs = measurement.decision.probabilities
+                    raw_pred = measurement.decision.selected_id
+                    conf_raw = max(raw_probs.values())
+                    acc_raw = 1 if raw_pred == reference else 0
+                    w_data["confidences_raw"].append(conf_raw)
+                    w_data["accuracies_raw"].append(acc_raw)
+
+                    rec = {
+                        "example_id": example.example_id,
+                        "question_id": question_id,
+                        "workload_id": w_id,
+                        "primitive": question.type,
+                        "option_ids": list(option_ids),
+                        "option_values": opt_vals,
+                        "logits": logits_vec,
+                        "target": target_idx,
+                        "confidence_raw": conf_raw,
+                        "accuracy_raw": acc_raw,
+                        "public_benchmark": example.public_source is not None,
+                    }
+                    cache_handle.write(json.dumps(rec) + "\n")
+                    cache[example.example_id].append(rec)
+                cache_handle.flush()
+                new_scored += 1
+                if throttle_ms > 0:
+                    throttle(throttle_ms)
+
+            if (new_scored > 0 and new_scored % chunk_size == 0) or (idx + 1 == total_cal):
+                pct = (idx + 1) / total_cal * 100
+                print(
+                    f"Calibration progress: {idx + 1}/{total_cal} ({pct:.1f}%) "
+                    f"[{cached_count} cached, {new_scored} computed]...",
+                    flush=True,
+                )
+    finally:
+        cache_handle.close()
 
     output_dir = root / args.output
     output_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = root / args.summary
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+
     profiles_created = {}
+    if summary_path.exists():
+        try:
+            with summary_path.open("r", encoding="utf-8") as handle:
+                profiles_created = json.load(handle)
+        except Exception:
+            profiles_created = {}
 
     for workload_id, w_data in workload_data.items():
         primitive = w_data["primitive"]
@@ -599,20 +787,29 @@ def run_calibration(args: argparse.Namespace) -> int:
         # 1. Fit temperature scaling
         fitted_t = fit_temperature_scaling(logits_list, targets)
         fitted_t = round(max(0.1, min(10.0, fitted_t)), 4)
+        method = "temperature_scaling"
+        bias = None
 
-        # 2. Compute calibrated probabilities
-        calibrated_probs_list = []
-        calibrated_confs = []
-        calibrated_accs = []
-        for logits, target in zip(logits_list, targets, strict=True):
-            max_z = max(logits)
-            exp_z = [math.exp((z - max_z) / fitted_t) for z in logits]
-            sum_exp = sum(exp_z)
-            p_vec = [v / sum_exp for v in exp_z]
-            calibrated_probs_list.append(p_vec)
-            pred_idx = max(range(len(p_vec)), key=lambda i: p_vec[i])
-            calibrated_confs.append(max(p_vec))
-            calibrated_accs.append(1 if pred_idx == target else 0)
+        # 2. Compute calibrated probabilities helper
+        def _compute_calibrated(t: float, b: list[float] | None):
+            probs_list = []
+            confs = []
+            accs = []
+            for logits, target in zip(logits_list, targets, strict=True):
+                scaled = [z / t for z in logits]
+                if b is not None:
+                    scaled = [s + bi for s, bi in zip(scaled, b, strict=True)]
+                max_z = max(scaled)
+                exp_z = [math.exp(s - max_z) for s in scaled]
+                sum_exp = sum(exp_z)
+                p_vec = [v / sum_exp for v in exp_z]
+                probs_list.append(p_vec)
+                pred_idx = max(range(len(p_vec)), key=lambda i: p_vec[i])
+                confs.append(max(p_vec))
+                accs.append(1 if pred_idx == target else 0)
+            return probs_list, confs, accs
+
+        calibrated_probs_list, calibrated_confs, calibrated_accs = _compute_calibrated(fitted_t, None)
 
         # 3. Metrics on calibration split
         ece, bins = compute_ece(calibrated_confs, calibrated_accs, num_bins=10, equal_count=True)
@@ -620,20 +817,45 @@ def run_calibration(args: argparse.Namespace) -> int:
         prev_brier = compute_prevalence_brier(targets, len(option_ids))
         nll = compute_nll(calibrated_probs_list, targets)
 
+        # If scalar temperature fails Brier gate, try vector scaling
+        if brier > prev_brier:
+            fitted_t_vec, fitted_bias = fit_vector_scaling(logits_list, targets, initial_temperature=fitted_t)
+            v_probs_list, v_confs, v_accs = _compute_calibrated(fitted_t_vec, fitted_bias)
+            v_brier = compute_brier_score(v_probs_list, targets)
+            if v_brier < brier:
+                fitted_t = fitted_t_vec
+                bias = fitted_bias
+                method = "vector_scaling"
+                calibrated_probs_list, calibrated_confs, calibrated_accs = v_probs_list, v_confs, v_accs
+                ece, bins = compute_ece(calibrated_confs, calibrated_accs, num_bins=10, equal_count=True)
+                brier = v_brier
+                nll = compute_nll(calibrated_probs_list, targets)
+
         # 4. Acceptance policy
-        if workload_id == "support-routing-v1" or w_data["public_benchmark"]:
+        if workload_id == "support-routing-v1":
             policy = AcceptancePolicy(type="review_only", threshold=0.90)
+            selective = compute_selective_metrics(calibrated_confs, calibrated_accs, 1.01)
         else:
             fitted_thresh, _ = fit_acceptance_threshold(
                 calibrated_confs, calibrated_accs, target_error=0.05, min_coverage=0.50
             )
-            policy = AcceptancePolicy(type="threshold", threshold=round(fitted_thresh, 4))
+            # Find candidate thresholds that meet Clopper-Pearson 95% upper bound <= 0.05 with coverage >= 0.50
+            candidates = sorted({round(c, 4) for c in calibrated_confs} | {0.50, 0.70, 0.80, 0.85, 0.90, 0.95})
+            passing_thresh = None
+            passing_sel = None
+            for thresh in candidates:
+                sel = compute_selective_metrics(calibrated_confs, calibrated_accs, thresh)
+                if sel["coverage"] >= 0.50 and sel["accepted_error_95_upper_bound"] <= 0.05 and sel["accepted_count"] >= 59:
+                    passing_thresh = thresh
+                    passing_sel = sel
+                    break
 
-        selective = compute_selective_metrics(
-            calibrated_confs,
-            calibrated_accs,
-            policy.threshold if policy.type != "review_only" else 1.01,
-        )
+            if passing_thresh is not None:
+                policy = AcceptancePolicy(type="threshold", threshold=round(passing_thresh, 4))
+                selective = passing_sel
+            else:
+                policy = AcceptancePolicy(type="review_only", threshold=round(fitted_thresh, 4))
+                selective = compute_selective_metrics(calibrated_confs, calibrated_accs, 1.01)
 
         gate_ece = ece <= 0.05
         gate_brier = brier <= prev_brier
@@ -673,8 +895,9 @@ def run_calibration(args: argparse.Namespace) -> int:
             prompt_version=model_config["prompt_version"],
             label_version=model_config["label_version"],
             cardinality_range=cardinality_range,
-            method="temperature_scaling",
+            method=method,
             temperature=fitted_t,
+            bias=bias,
             policy=policy,
             dataset_sha256=manifest["dataset_sha256"],
             split="calibration",
@@ -722,22 +945,28 @@ def run_calibration(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_equivalence(args: argparse.Namespace) -> int:
+    from jah.equivalence import run_equivalence
+
+    return run_equivalence(args)
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=Path.cwd())
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     validate = subparsers.add_parser("validate")
-    validate.add_argument("--dataset", default="evals/data/m1-suite.jsonl")
-    validate.add_argument("--suite-config", default="configs/evals/m1-suite.yaml")
-    validate.add_argument("--split-seed", default="jah-m1-split-v1")
+    validate.add_argument("--dataset", default="evals/data/public/suite.jsonl")
+    validate.add_argument("--suite-config", default="configs/evals/public-suite.yaml")
+    validate.add_argument("--split-seed", default="jah-public-v1")
     validate.add_argument("--output", default="artifacts/m1/suite-validation.json")
     validate.set_defaults(function=validate_dataset)
 
     run = subparsers.add_parser("run")
-    run.add_argument("--dataset", default="evals/data/m1-suite.jsonl")
-    run.add_argument("--suite-config", default="configs/evals/m1-suite.yaml")
-    run.add_argument("--split-seed", default="jah-m1-split-v1")
+    run.add_argument("--dataset", default="evals/data/public/suite.jsonl")
+    run.add_argument("--suite-config", default="configs/evals/public-suite.yaml")
+    run.add_argument("--split-seed", default="jah-public-v1")
     run.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
     run.add_argument("--backend", choices=("direct", "generative"), required=True)
     run.add_argument(
@@ -745,23 +974,53 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=("train", "development", "calibration", "locked_test", "task_holdout"),
         default="development",
     )
-    run.add_argument("--profiles-dir", default="configs/profiles")
+    run.add_argument("--profiles-dir", default="configs/profiles/public")
     run.add_argument("--use-workload-profiles", action="store_true", default=False)
     run.add_argument("--adapter-dir", default=None, help="Optional path to LoRA adapter bundle")
     run.add_argument("--workload", default=None, help="Optional workload filter")
     run.add_argument("--max-examples", type=int, default=None, help="Optional limit on evaluated examples")
     run.add_argument("--output", required=True)
     run.add_argument("--predictions", required=True)
+    run.add_argument("--resume", action="store_true", default=False, help="Resume from existing predictions file")
+    run.add_argument("--chunk-size", type=int, default=25, help="Flush predictions and log progress every N examples")
+    run.add_argument("--throttle-ms", type=float, default=5.0, help="Delay in ms between requests to throttle resource consumption")
+    run.add_argument("--resource-limit", type=float, default=0.80, help="Cap GPU and CPU resource usage to this fraction")
+    run.add_argument("--no-resource-limits", action="store_true", default=False)
+    run.add_argument(
+        "--exclude-reviewed-quarantine",
+        default=None,
+        help="Path to review audit artifact (e.g. artifacts/review/audit.json) to exclude quarantined rows",
+    )
     run.set_defaults(function=run_evaluation)
 
     calibrate = subparsers.add_parser("calibrate")
-    calibrate.add_argument("--dataset", default="evals/data/m1-suite.jsonl")
-    calibrate.add_argument("--suite-config", default="configs/evals/m1-suite.yaml")
-    calibrate.add_argument("--split-seed", default="jah-m1-split-v1")
+    calibrate.add_argument("--dataset", default="evals/data/public/suite.jsonl")
+    calibrate.add_argument("--suite-config", default="configs/evals/public-suite.yaml")
+    calibrate.add_argument("--split-seed", default="jah-public-v1")
     calibrate.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
-    calibrate.add_argument("--output", default="configs/profiles")
-    calibrate.add_argument("--summary", default="artifacts/m2/calibration-summary.json")
+    calibrate.add_argument("--output", default="configs/profiles/public")
+    calibrate.add_argument("--summary", default="artifacts/public/calibration-summary.json")
+    calibrate.add_argument("--workload", default=None, help="Optional workload filter (e.g. banking77-16-intent-v1)")
+    calibrate.add_argument("--cache-file", default="artifacts/public/calibration_cache.jsonl", help="Incremental cache path for scored logits")
+    calibrate.add_argument("--chunk-size", type=int, default=25, help="Flush cache and log progress every N examples")
+    calibrate.add_argument("--throttle-ms", type=float, default=5.0, help="Delay in ms between requests to throttle resource consumption")
+    calibrate.add_argument("--resource-limit", type=float, default=0.80, help="Cap GPU and CPU resource usage to this fraction")
+    calibrate.add_argument("--no-resource-limits", action="store_true", default=False)
     calibrate.set_defaults(function=run_calibration)
+
+    equivalence = subparsers.add_parser("equivalence")
+    equivalence.add_argument("--requests", default="evals/fixtures/equivalence")
+    equivalence.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
+    equivalence.add_argument("--profiles-dir", default="configs/profiles/public")
+    equivalence.add_argument("--adapter-dir", default=None)
+    equivalence.add_argument("--microbatch-size", type=int, default=16)
+    equivalence.add_argument("--disable-prefix-cache", action="store_true", default=False)
+    equivalence.add_argument("--output", default="artifacts/m3/equivalence.json")
+    equivalence.add_argument("--rows", default="artifacts/m3/equivalence.jsonl")
+    equivalence.add_argument("--throttle-ms", type=float, default=5.0)
+    equivalence.add_argument("--resource-limit", type=float, default=0.80)
+    equivalence.add_argument("--no-resource-limits", action="store_true", default=False)
+    equivalence.set_defaults(function=_run_equivalence)
 
     compare = subparsers.add_parser("compare")
     compare.add_argument("--direct-report", required=True)

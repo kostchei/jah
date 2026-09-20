@@ -1,27 +1,32 @@
 {
   "artifact_id": "qwen3.5-4b-m0",
-  "created_at": "2026-09-20T04:57:18.877991+00:00",
+  "created_at": "2026-09-20T08:23:54.239174+00:00",
   "environment": {
     "base_url": "http://127.0.0.1:8000",
     "platform": "Windows-11-10.0.26200-SP0",
     "python": "3.12.9"
   },
-  "evidence_sha256": "ff284641e52093b2ae65061a9bfdcfe926f0bbd7b2279ee4ee1698f24d929998",
+  "evidence_sha256": "8cfc0795523d2fac407ae49d202f9105d7886bd221793aaedd5457ba79b3b1e3",
   "failures": [],
+  "gate_passed": true,
   "latency_ms": {
-    "client_median": 1463.1501999974716,
-    "client_p95": 1591.386300016893,
-    "server_median": 1461.7827999754809,
-    "server_p95": 1589.9162999994587
+    "client_median": 1517.4106000049505,
+    "client_p95": 1703.235199995106,
+    "server_median": 1516.1153999797534,
+    "server_p95": 1701.9845999893732
   },
-  "p95_two_second_gate_passed": true,
+  "p95_two_second_latency_observed": true,
   "protocol": {
     "concurrency": 1,
-    "measured_requests": 15,
+    "measured_requests": 200,
     "primitive": "boolean",
+    "protocol_compliant": true,
     "questions_per_request": 16,
+    "required_measured_requests": 200,
+    "required_warmup_requests": 20,
+    "smoke": false,
     "state_tokens": 2048,
-    "warmup_requests": 5
+    "warmup_requests": 20
   },
   "request_sha256": "0ef1cd8af5f3c63f3bd6693549a0ba7cccf0b1d8370246bb9144e4a9d7097661",
   "schema_version": 1

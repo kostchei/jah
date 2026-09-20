@@ -11,88 +11,91 @@ label_version: latin-uppercase-bare-v2
 cardinality_range:
 - 2
 - 2
-method: temperature_scaling
-temperature: 0.7999
+method: vector_scaling
+temperature: 0.7897
+bias:
+- 1.409963
+- -1.409963
 policy:
-  type: review_only
-  threshold: 0.9
+  type: threshold
+  threshold: 0.7463
   metric: max_probability
 dataset_sha256: 5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed
 split: calibration
-fitted_at: '2026-09-20T05:57:06.229720+00:00'
+fitted_at: '2026-09-20T11:35:40.610694+00:00'
 metrics:
-  brier_score: 0.299406
+  brier_score: 0.086645
   prevalence_brier_score: 0.099623
-  nll: 0.458021
-  ece: 0.045374
-  coverage: 0.0
-  accepted_error_rate: 0.0
-  accepted_error_95_upper_bound: 1.0
+  nll: 0.157366
+  ece: 0.008895
+  coverage: 0.9501
+  accepted_error_rate: 0.0375
+  accepted_error_95_upper_bound: 0.0457
   sample_count: 1883
-  accepted_count: 0
-  errors_in_accepted: 0
+  accepted_count: 1789
+  errors_in_accepted: 67
   gate_ece_passed: true
-  gate_brier_passed: false
-  gate_selective_passed: false
-  samples_sufficient_for_gate: false
+  gate_brier_passed: true
+  gate_selective_passed: true
+  samples_sufficient_for_gate: true
   reliability_bins:
   - count: 189
-    mean_confidence: 0.5441969228046895
-    accuracy: 0.6190476190476191
-    difference: 0.07485069624292962
-    min_confidence: 0.5
-    max_confidence: 0.5775048973824004
+    mean_confidence: 0.7356721634053088
+    accuracy: 0.6984126984126984
+    difference: 0.03725946499261046
+    min_confidence: 0.5073137868342197
+    max_confidence: 0.8470838945039255
   - count: 189
-    mean_confidence: 0.6211541150130067
-    accuracy: 0.5396825396825397
-    difference: 0.081471575330467
-    min_confidence: 0.5775048973824004
-    max_confidence: 0.651372608213627
+    mean_confidence: 0.8859115153687078
+    accuracy: 0.8941798941798942
+    difference: 0.008268378811186361
+    min_confidence: 0.8470838945039255
+    max_confidence: 0.9243763399433231
   - count: 189
-    mean_confidence: 0.6987607866634612
-    accuracy: 0.5978835978835979
-    difference: 0.10087718877986329
-    min_confidence: 0.651372608213627
-    max_confidence: 0.7186180921712795
+    mean_confidence: 0.940452391900003
+    accuracy: 0.9365079365079365
+    difference: 0.003944455392066448
+    min_confidence: 0.9243763399433231
+    max_confidence: 0.9583735527340302
   - count: 189
-    mean_confidence: 0.7560852869936759
-    accuracy: 0.6666666666666666
-    difference: 0.08941862032700931
-    min_confidence: 0.7186180921712795
-    max_confidence: 0.7773269110068148
+    mean_confidence: 0.9683406633254482
+    accuracy: 0.9682539682539683
+    difference: 8.669507147995859e-05
+    min_confidence: 0.9583735527340302
+    max_confidence: 0.9774597330377485
   - count: 189
-    mean_confidence: 0.8061809520704171
-    accuracy: 0.8042328042328042
-    difference: 0.0019481478376128791
-    min_confidence: 0.7773269110068148
-    max_confidence: 0.8267397761350505
+    mean_confidence: 0.981473917539475
+    accuracy: 0.9947089947089947
+    difference: 0.01323507716951966
+    min_confidence: 0.9774597330377485
+    max_confidence: 0.9858601522364508
   - count: 189
-    mean_confidence: 0.8453988203764621
-    accuracy: 0.8835978835978836
-    difference: 0.038199063221421525
-    min_confidence: 0.8267397761350505
-    max_confidence: 0.8670627807187359
+    mean_confidence: 0.9877396225329999
+    accuracy: 0.9841269841269841
+    difference: 0.003612638406015778
+    min_confidence: 0.9858601522364508
+    max_confidence: 0.989657461387945
   - count: 189
-    mean_confidence: 0.8782554557425384
-    accuracy: 0.9047619047619048
-    difference: 0.026506449019366385
-    min_confidence: 0.8670627807187359
-    max_confidence: 0.8991461790259094
+    mean_confidence: 0.9911021564032245
+    accuracy: 0.9788359788359788
+    difference: 0.012266177567245684
+    min_confidence: 0.989657461387945
+    max_confidence: 0.9924428061458468
   - count: 189
-    mean_confidence: 0.9054858879310775
-    accuracy: 0.91005291005291
-    difference: 0.004567022121832465
-    min_confidence: 0.8991461790259094
-    max_confidence: 0.9124595677267625
+    mean_confidence: 0.9936021057719104
+    accuracy: 1.0
+    difference: 0.006397894228089562
+    min_confidence: 0.9924428061458468
+    max_confidence: 0.9944822131269008
   - count: 189
-    mean_confidence: 0.9277834917180248
-    accuracy: 0.9523809523809523
-    difference: 0.02459746066292756
-    min_confidence: 0.9124595677267625
-    max_confidence: 0.9344155159447394
+    mean_confidence: 0.9954294607695702
+    accuracy: 0.9947089947089947
+    difference: 0.0007204660605755198
+    min_confidence: 0.9944822131269008
+    max_confidence: 0.995973492533383
   - count: 182
-    mean_confidence: 0.9515494688669603
-    accuracy: 0.9615384615384616
-    difference: 0.009988992671501218
-    min_confidence: 0.9344155159447394
-    max_confidence: 0.9855039567643191
+    mean_confidence: 0.9970669185280228
+    accuracy: 1.0
+    difference: 0.002933081471977239
+    min_confidence: 0.995973492533383
+    max_confidence: 0.9991703700711613

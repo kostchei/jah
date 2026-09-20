@@ -1,0 +1,109 @@
+{
+  "profile": null,
+  "questions": {
+    "cites_source": {
+      "instructions": "Judge the proposition against the supplied essay only.",
+      "proposition": "The essay refers to material from the supplied source text.",
+      "type": "boolean"
+    },
+    "claim": {
+      "instructions": "Using the six-level rubric, rate the clarity and defensibility of the central claim in the supplied essay.",
+      "levels": [
+        {
+          "description": "Little or no command of source-based writing.",
+          "id": "score-1",
+          "value": 1.0
+        },
+        {
+          "description": "Limited command; weak use of the source.",
+          "id": "score-2",
+          "value": 2.0
+        },
+        {
+          "description": "Partial command; uneven use of the source.",
+          "id": "score-3",
+          "value": 3.0
+        },
+        {
+          "description": "Adequate command; generally sound use of the source.",
+          "id": "score-4",
+          "value": 4.0
+        },
+        {
+          "description": "Strong command; effective use of the source.",
+          "id": "score-5",
+          "value": 5.0
+        },
+        {
+          "description": "Thorough command; skillful use of the source.",
+          "id": "score-6",
+          "value": 6.0
+        }
+      ],
+      "type": "score"
+    },
+    "evidence": {
+      "instructions": "Using the six-level rubric, rate the use of specific evidence drawn from the source text in the supplied essay.",
+      "levels": [
+        {
+          "description": "Little or no command of source-based writing.",
+          "id": "score-1",
+          "value": 1.0
+        },
+        {
+          "description": "Limited command; weak use of the source.",
+          "id": "score-2",
+          "value": 2.0
+        },
+        {
+          "description": "Partial command; uneven use of the source.",
+          "id": "score-3",
+          "value": 3.0
+        },
+        {
+          "description": "Adequate command; generally sound use of the source.",
+          "id": "score-4",
+          "value": 4.0
+        },
+        {
+          "description": "Strong command; effective use of the source.",
+          "id": "score-5",
+          "value": 5.0
+        },
+        {
+          "description": "Thorough command; skillful use of the source.",
+          "id": "score-6",
+          "value": 6.0
+        }
+      ],
+      "type": "score"
+    },
+    "overall_band": {
+      "instructions": "Select the band that best describes the essay as a whole.",
+      "options": [
+        {
+          "description": "Little or limited command of source-based writing.",
+          "id": "weak"
+        },
+        {
+          "description": "Partial command with uneven source use.",
+          "id": "developing"
+        },
+        {
+          "description": "Adequate to strong command with sound source use.",
+          "id": "proficient"
+        },
+        {
+          "description": "Thorough command with skillful source use.",
+          "id": "advanced"
+        }
+      ],
+      "type": "choice"
+    }
+  },
+  "state": {
+    "assignment": "Write an explanatory essay to inform fellow citizens about the advantages of limiting car usage. Your essay must be based on ideas and information that can be found in the passage set. Manage your time carefully so that you can read the passages; plan your response; write your response; and revise and edit your response. Be sure to use evidence from multiple sources; and avoid overly relying on one source. Your response should be in the form of a multiparagraph essay. Write your essay in the space provided.",
+    "essay": "A day without drivng your car? who can't do that. Also making the Earth a better place to live? awsome! Taking advantage of a limiting car using its a great idea because people are lowering air pollution and there's no more rush-hour. Getting stuck in traffic isn't pretty nice and most likely if you have a meeting your going to be late. Also people just dont want to own cars anymore.\n\nTo start off, I like the idea that people are limiting their car usage because people are lowering air pollution. In source 2, the author explains \"Congestion was down 60 percent in the capital of France, after five-days of intensifying smog .. rivaled in Beijing, China, Which is known as one of the most polluted cites in the world.\" This means that cars are bad for the enviroment they had to decresse the number of cars so they could stop the smog becuase they didn't wanted to end up like china. But however, not useing cars is affecting car industry like it states in source 4 \"since transportation is the second larges source of America's emissions, just behind power plants. But it could have negative implication for the car industry.\" Never the less, air pollution is the main problem like in source 3 in Bogota \"The goal is to promote alternative transportation and reduce smog.\" The reason they are doing this is for people to find another way to get to their destination and to reduce smog as it states.\n\nFurthermore, I like the idea that people are limiting their car usage because there's no more rush-hour. Advoiding traffic is great like in source 3 \" Bogota, Colombia- In a program that's spread to other countries, millions of Colombians hiked, biked, skated or tok buses to work during a car-free day.. leaving the streets of this capital city eerily devoid of traffic.\" Colombian's do this to advoid traffic and its a cool way because you could ride bikes and skated. Likwise in source 4 some Children don't get their driver license its not because they're lazy it's because they don't need them, yeah they come in handy but they're not interseted for example in source 4 they stated \"They organized their summer jobs and socail life around where they can walk or take public ransportation or car-pool with friends.\" having a car isn't a teenager main interst, they rather walk to a close by place or car pool with their friends.\n\nTo sum up, in my opinion I think limiting car usage is a great idea because less air pollution, rush-hour, and some people just don't want to own cars.    ",
+    "source_texts": "Stimulus 1566\n1\n2\n3\n4\n5\n6\n \nCar-Free \nCities\n \nSource 1: In German\nSuburb, Life Goes On\nWithout \nCars\nby Elisabeth \nRosenthal\n \n        VAUBAN, Germany\u2014\nResidents\n of this upscale community are suburban pioneers, going\nwhere few soccer moms or commuting executives have ever gone before: they have given up\ntheir cars.\n \n        Street parking, driveways and home garages are generally forbidden in this experimental\nnew district on the outskirts of Freiburg, near the French and Swiss borders. Vauban\u2019s streets are\ncompletely \u201ccar-free\u201d\u2014\nexcept\n the main thoroughfare, where the tram to downtown Freiburg runs,\nand a few streets on one edge of the community. Car ownership is allowed, but there are only two\nplaces to park\u2014\nlarge\n garages at the edge of the development, where a car-owner buys a space,\nfor \n$40,000,\n along with a home.\n \n        As a result, 70 percent of Vauban\u2019s families do not own cars, and 57 percent sold a car to\nmove here. \u201cWhen I had a car I was always tense. I\u2019m much happier this way,\u201d said Heidrun\nWalter, a media trainer and mother of two, as she walked verdant streets where the swish of\nbicycles and the chatter of wandering children drown out the occasional distant motor.\n \n        Vauban, completed in \n2006\n, is an example of a growing trend in Europe, the United States\nand elsewhere to separate suburban life from auto use, as a component of a movement called\n\u201csmart planning.\u201d\n \n        Automobiles are the linchpin of suburbs, where middle-class families from Chicago to\nShanghai tend to make their homes. And that, experts say, is a huge impediment to current\nefforts to drastically reduce greenhouse gas emissions from \ntailpipes . . .\n . Passenger cars are\nresponsible for 12 percent of greenhouse gas emissions in \nEurope . . .\n and up to 50 percent in\nsome car-intensive areas in the United States.\n \n        While there have been efforts in the past two decades to make cities denser, and better for\nwalking, planners are now taking the concept to the \nsuburbs . . .\n . Vauban, home to \n5,500\n7\n8\n9\n10\n11\nresidents within a rectangular square mile, may be the most advanced experiment in low-car\nsuburban life. But its basic precepts are being adopted around the world in attempts to make\nsuburbs more compact and more accessible to public transportation, with less space for parking.\nIn this new approach, stores are placed a walk away, on a main street, rather than in malls along\nsome distant highway.\n \n        \u201cAll of our development since World War \nII\n has been centered on the car, and that will have\nto change,\u201d said David Goldberg, an official of Transportation for America, a fast-growing coalition\nof hundreds of groups in the United \nStates . . .\n who are promoting new communities that are less\ndependent on cars. \nMr.\n Goldberg added: \u201cHow much you drive is as important as whether you\nhave a hybrid.\u201d\n \n        Levittown and Scarsdale, New York suburbs with spread-out homes and private garages,\nwere the dream towns of the \n1950s\n and still exert a strong appeal. But some new suburbs may\nwell look more Vauban-like, not only in developed countries but also in the developing world,\nwhere emissions from an increasing number of private cars owned by the burgeoning middle\nclass are choking cities.\n \n        In the United States, the Environmental Protection Agency is promoting \u201ccar reduced\u201d\ncommunities, and legislators are starting to act, if cautiously. Many experts expect public\ntransport\n serving suburbs to play a much larger role in a new six-year federal transportation bill\nto be approved this year, \nMr.\n Goldberg said. In previous bills, 80 percent of appropriations have by\nlaw gone to highways and only 20 percent to other transport.\n \n \nExcerpt from \u201cIn German Suburb, Life Goes On\nWithout \nCars\u201d\n by Elisabeth Rosenthal, from the\nNew York Times\n. Copyright \n\u00a9 2009\n by the New\nYork Times Company. Reprinted by permission of\nthe New York Times Company via Copyright\nClearance Center.\n \n \nSource 2: Paris bans\ndriving due to \nsmog\nby Robert \nDuffer\n \n        After days of near-record pollution, Paris enforced a partial driving ban to clear the air of the\nglobal city.\n \n        On Monday motorists with even-numbered license plates were ordered to leave their cars at\n12\n13\n14\n15\n16\n17\n18\n19\nhome or suffer a 22-euro fine (\n$31\n). The same would apply to odd-numbered plates the following\nday.\n \n        Almost \n4,000\n drivers were fined, according to \nReuters\n . . .\n [Twenty-seven] people had their\ncars impounded for their reaction to the fine.\n \n        That\u2019s easier to imagine than a car-free Champs-\nElysees.\n \n        Congestion\n was down 60 percent in the capital of France, after five-days of intensifying\nsmog . . . \n[The smog] rivaled Beijing, China, which is known as one of the most polluted cities in\nthe world.\n \n        Cold nights and warm days caused the warmer layer of air to trap car emissions.\n \n        Diesel fuel was blamed, since France \nhas . . .\n \n[a]\n tax policy that favors diesel over gasoline.\nDiesels make up 67 percent of vehicles in France, compared to a \n53.3\n percent average of diesel\nengines in the rest of Western Europe, according to Reuters.\n \n        Paris typically has more smog than other European \ncapitals . . .\n [Last] week Paris had \n147\nmicrograms of particulate matter (PM) per cubic meter\n \ncompared with \n114\n in Brussels and \n79.7\nin London, Reuters found.\n \n        Delivery companies complained of lost revenue, while exceptions were made for plug-in\ncars, hybrids, and cars carrying three or more passengers. Public transit was free of charge from\nFriday to Monday, according to the BBC.\n \n        The smog cleared enough Monday for the ruling French party to rescind the ban for odd-\nnumbered plates on Tuesday.\n \nReuters\n: an international news agency\nheadquartered in London\nChamps-Elysees\n: a famous street in Paris\ncongestion\n: car \ntraffic\n \n \nExcerpt from \u201cParis bans driving due to \nsmog\u201d\n by\nRobert Duffer, from \nthe \nChicago Tribune.\nCopyright \n\u00a9 2014\n by the Chicago Tribune.\nReprinted by permission of the Chicago Tribune via\nCopyright Clearance Center.\n \n \n1\n2\n3\n1\n2\n3\n20\n21\n22\n23\n24\n25\n26\n27\n28\nSource 3: Car-free day is\nspinning into a big hit in\nBogota\nby Andrew \nSelsky\n \n        BOGOTA, Colombia\u2014\nIn\n a program that\u2019s set to spread to other countries, millions of\nColombians hiked, biked, skated or took buses to work during a car-free day yesterday, leaving\nthe streets of this capital city eerily devoid of traffic jams.\n \n        It was the third straight year cars have been banned with only buses and taxis permitted for\nthe Day Without Cars in this capital city of 7 million. The goal is to promote alternative\ntransportation and reduce smog. Violators faced \n$25\n fines.\n \n        The turnout was large, despite gray clouds that dumped occasional rain showers on Bogota.\n \n        \u201cThe rain hasn\u2019t stopped people from participating,\u201d said Bogota Mayor Antanas \nMockus . . .\n.\n \n        \u201cIt\u2019s a good opportunity to take away stress and lower air pollution,\u201d said businessman\nCarlos Arturo Plaza as he rode a two-seat bicycle with his wife.\n \n        For the first time, two other Colombian cities, Cali and Valledupar, joined the event.\n \n        Municipal authorities from other countries came to Bogota to see the event and were\nenthusiastic. \u201cThese people are generating a revolutionary change, and this is crossing borders,\u201d\nsaid Enrique Riera, the mayor of Asunci\u00f3n, \nParaguay. . . .\n \n        The day without cars is part of an improvement campaign that began in Bogota in the mid-\n1990s\n. It has seen the construction of \n118\n miles of bicycle paths, the most of any Latin American\ncity, according to Mockus, the city\u2019s mayor.\n \n        Parks and sports centers also have bloomed throughout the city; uneven, pitted sidewalks\nhave been replaced by broad, smooth sidewalks; rush-hour restrictions have dramatically cut\ntraffic; and new restaurants and upscale shopping districts have cropped up.\n \n \n29\n30\n31\n32\n33\n34\nExcerpt from \u201cCar-free day is spinning into a big\nhit in \nBogota\u201d\n by Andrew Selsky, from the \nSeattle\nTimes\n. Copyright \n\u00a9\n \n2002\n by the Seattle Times\nCompany. Reprinted by permission of the Seattle\nTimes Company via Copyright Clearance Center.\n \n \nSource 4: The End of Car\nCulture\nby Elisabeth \nRosenthal\n \n        President Obama\u2019s ambitious goals to curb the United States\u2019 greenhouse gas emissions,\nunveiled last week, will get a fortuitous assist from an \nincipient\n shift in American behavior:\nrecent studies suggest that Americans are buying fewer cars, driving less and getting fewer\nlicenses as each year goes by.\n \n        That has left researchers pondering a fundamental question: Has America passed peak\ndriving?\n \n        The United States, with its broad expanses and suburban ideals, had long been one of the\nworld\u2019s prime car cultures. It is the birthplace of the Model T; the home of Detroit; the place\nwhere Wilson Pickett immortalized \u201cMustang Sally\u201d \n. . . .\n \n        But America\u2019s love affair with its vehicles seems to be cooling. When adjusted for population\ngrowth, the number of miles driven in the United States peaked in \n2005\n and dropped steadily\nthereafter, according to an analysis by Doug Short of Advisor Perspectives, an investment\nresearch company. As of April \n2013\n, the number of miles driven per person was nearly 9 percent\nbelow the peak and equal to where the country was in January \n1995\n. Part of the explanation\ncertainly lies in the recession, because cash-strapped Americans could not afford new cars, and\nthe unemployed weren\u2019t going to work anyway. But by many measures the decrease in driving\npreceded the downturn and appears to be persisting now that recovery is under way. The next\nfew years will be telling.\n \n        \u201cWhat most intrigues me is that rates of car ownership per household and per person\nstarted to come down two to three years before the downturn,\u201d said Michael Sivak, who studies\nthe trend and who is a research professor at the University of Michigan\u2019s Transportation Research\nInstitute. \u201cI think that means something more fundamental is going on.\u201d\n \n        If the pattern persists\u2014\nand\n many sociologists believe it will\u2014it will have beneficial\nimplications for carbon emissions and the environment, since transportation is the second largest\nsource of America\u2019s emissions, just behind power plants. But it could have negative implications\n1\n35\n36\n37\n38\n39\n40\n41\n42\n43\nfor the car industry. Indeed, companies like Ford and Mercedes are already rebranding themselves\n\u201cmobility\u201d companies with a broader product range beyond the personal vehicle.\n \n        \u201cDifferent things are converging which suggest that we are witnessing a long-term cultural\nshift,\u201d said Mimi Sheller, a sociology professor at Drexel University and director of its Mobilities\nResearch and Policy Center. She cites various factors: the Internet makes telecommuting possible\nand allows people to feel more connected without driving to meet friends. The renewal of center\ncities has made the suburbs less appealing and has drawn empty nesters back in. Likewise the\nrise in cellphones and car-pooling apps has facilitated more flexible commuting arrangements,\nincluding the evolution of shared van services for getting to work.\n \n        With all these changes, people who stopped car commuting as a result of the recession may\nfind less reason to resume the \nhabit. . . .\n \n        New York\u2019s new bike-sharing program and its skyrocketing bridge and tunnel tolls reflect\nthose new priorities, as do a proliferation of car-sharing programs across the nation.\n \n        Demographic shifts in the driving population suggest that the trend may accelerate. There\nhas been a large drop in the percentage of 16- to 39-year-olds getting a license, while older\npeople are likely to retain their licenses as they age, \nMr.\n Sivak\u2019s research has found.\n \n        He and I have similar observations about our children. Mine (19 and 21) have not bothered\nto get a driver\u2019s license, even though they both live in places where one could come in handy.\nThey are interested, but it\u2019s not a priority. They organize their summer jobs and social life around\nwhere they can walk or take public transportation or car-pool with friends.\n \n        Mr.\n Sivak\u2019s son lives in San Francisco and has a car but takes Bay Area Rapid Transit, when\nhe can, even though that often takes longer than driving. \u201cWhen I was in my \n20s\n and \n30s\n,\u201d \nMr.\nSivak said, \u201cI was curious about what kind of car people drove, but young people don\u2019t really\ncare. A car is just a means of getting from A to B when BART doesn\u2019t work.\u201d\n \n        A study last year found that driving by young people decreased 23 percent between \n2001\nand \n2009. . . .\n \n        Whether members of the millennial generation will start buying more cars once they have\nkids to take to soccer practice and school plays remains an open question. But such projections\nhave important business implications, even if car buyers are merely older or buying fewer cars in\na lifetime rather than rejecting car culture outright.\n \n        At the Mobile World Congress last year in Barcelona, Spain, Bill Ford, executive chairman of\nthe Ford Motor Company, laid out a business plan for a world in which personal vehicle ownership\nis impractical or undesirable. He proposed partnering with the telecommunications industry to\ncreate cities in which \u201cpedestrian, bicycle, private cars, commercial and public transportation\ntraffic are woven into a connected network to save time, conserve resources, lower emissions and\nimprove safety.\u201d\n \nincipient\n: at an initial stage; beginning to happen\nor \ndevelop\n \n \nExcerpt from \u201cThe End of Car \nCulture\u201d\n by\nElisabeth Rosenthal, from the \nNew York Times\n.\nCopyright \n\u00a9 2013\n by the New York Times\nCompany. Reprinted by permission of the New\nYork Times Company via Copyright Clearance\nCenter.\n \n1\n23349\n \n \n \n \n \n \n \n \n \nWrite an explanatory essay to inform fellow citizens about the advantages of limiting car usage.\nYour essay must be based on ideas and information that can be found in the passage set.\n \nManage your time carefully so that you can\nread\n the passages;\nplan your response;\nwrite your response; and\nrevise and edit your response.\n \nBe sure to\nuse evidence from multiple sources; and\navoid overly relying on one source.\n \nYour response should be in the form of a \nmultiparagraph\n essay. Write your essay in the space\nprovided.\n# Words 0/4000, # Chars 0/20000\n# Words 0/4000, # Chars 0/20000"
+  }
+}

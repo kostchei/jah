@@ -1,6 +1,13 @@
 # M1 reproducible-baseline status
 
-Status: **unblocked; initial model-adjudicated baseline generated and paired reports recorded**.
+Status: **contract, scheduler, and paired evaluation tooling implemented; the M1 data exit
+criterion is met by the public human benchmark, not by the model-adjudicated suite described
+below.**
+
+The 141-row model-adjudicated suite has been retired as an evaluation set (see
+[M2_STATUS.md](M2_STATUS.md) section 2). Real evaluation uses `evals/data/public/suite.jsonl`,
+33,126 upstream-human-labeled decisions. Gate verdicts are rendered from artifacts into
+[EVIDENCE.md](EVIDENCE.md).
 
 ## Implemented
 
@@ -29,12 +36,21 @@ Status: **unblocked; initial model-adjudicated baseline generated and paired rep
 
 ## Data status
 
-The M1 intake file is `evals/data/m1-suite.jsonl`. It contains 141 model-adjudicated decisions
-spanning Choice (`support-routing-v1`), Boolean (`document-relevance-v1`), and Score (`rubric-assessment-v1`),
-generated and adjudicated by `qwen/qwen3.8-27b` via LM Studio.
+`evals/data/m1-suite.jsonl` holds 141 decisions generated and labeled by `qwen/qwen3.8-27b` via
+LM Studio. ADR-06 excludes teacher-model answers from evaluation ground truth, and the measured
+consequence is visible in `artifacts/m1/paired-comparison.json`: macro-F1 1.000 and a Brier score
+of 3.15e-16 on 22 development decisions. That is a model family agreeing with itself.
 
-`jah-eval validate` passes with zero failures and establishes the deterministic 60/15/10/15 split.
-The suite can be refined and augmented with real production traffic and human reviews over time.
+The file is retained only as a fast smoke fixture covering all three primitives.
+[configs/evals/m1-suite.yaml](configs/evals/m1-suite.yaml) records `purpose: smoke-fixture-only`
+and `evaluation_approved: false`.
+
+The evaluation suite is `evals/data/public/suite.jsonl`: 33,126 decisions carrying upstream human
+labels from banking77, WikiQA, and ASAP 2.0, imported with pinned source revisions and SHA-256
+checksums ([configs/evals/public-sources.json](configs/evals/public-sources.json)). Upstream human
+labels are not local independent adjudication, so `release_annotation_ready` stays `false`.
+
+All `jah-eval` defaults now resolve to the public suite and the `jah-public-v1` split seed.
 
 ## Reproducible run sequence
 
@@ -69,8 +85,10 @@ checked-in request fixture tokenized to exactly 2,048 state tokens by the pinned
 
 ## Remaining M1 exit work
 
-1. Collect and adjudicate at least 1,000 decisions under the checked-in schema.
-2. Freeze the resulting dataset and split manifest hashes.
+1. ~~Collect at least 1,000 decisions under the checked-in schema.~~ Met by the public suite
+   (33,126 decisions), with the adjudication caveat above.
+2. ~~Freeze the dataset and split manifest hashes.~~ Recorded in
+   `artifacts/public/import-report.json`.
 3. Run direct, generative, and paired development reports within the M1 compute budget.
 4. Create/freeze the exact 2,048-token, 16-Boolean benchmark request and execute the checked-in
    HTTP latency protocol on the reference host.

@@ -42,6 +42,13 @@ class EngineConfig:
     model_metadata: dict[str, Any] = field(default_factory=dict)
     microbatch_size: int = 16
     enable_prefix_cache: bool = True
+    force_sequential: bool = False
+    """Score every compiled question through the single-item reference path.
+
+    ADR-02 names full-prompt, one-question-at-a-time scoring as the correctness reference.
+    The optimization-equivalence gate needs to run that reference against the optimized path
+    on identical inputs, so the reference must remain reachable from configuration.
+    """
 
 
 class DecisionEngine:
@@ -61,7 +68,11 @@ class DecisionEngine:
 
         measurements = []
         try:
-            if hasattr(self.backend, "score_batch") and len(compiled) > 1:
+            if (
+                not self.config.force_sequential
+                and hasattr(self.backend, "score_batch")
+                and len(compiled) > 1
+            ):
                 measurements = list(
                     self.backend.score_batch(
                         compiled,
@@ -95,10 +106,11 @@ class DecisionEngine:
 
             decision = measurement.decision
             if is_validated and profile is not None:
-                if decision.logits and profile.temperature != 1.0:
+                if decision.logits and (profile.temperature != 1.0 or getattr(profile, "bias", None) is not None):
                     decision = rescale_logits(
                         decision.logits,
                         profile.temperature,
+                        bias=getattr(profile, "bias", None),
                         option_values=question.option_values,
                     )
                 calibration_status = "validated"

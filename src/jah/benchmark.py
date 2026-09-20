@@ -15,6 +15,9 @@ import httpx
 from jah.schemas import BooleanQuestion, EvaluateRequest, EvaluateResponse
 from jah.workload import sha256_file, stable_json_sha256
 
+REQUIRED_WARMUP_REQUESTS = 20
+REQUIRED_MEASURED_REQUESTS = 200
+
 
 def _percentile(values: list[float], fraction: float) -> float:
     return sorted(values)[int(fraction * (len(values) - 1))]
@@ -35,10 +38,14 @@ def validate_benchmark_shape(
 
 def run(args: argparse.Namespace) -> int:
     if not getattr(args, "smoke", False):
-        if args.warmup_requests < 20:
-            raise ValueError("the M1 protocol requires at least 20 warmup requests")
-        if args.measured_requests < 200:
-            raise ValueError("the M1 protocol requires at least 200 measured requests")
+        if args.warmup_requests < REQUIRED_WARMUP_REQUESTS:
+            raise ValueError(
+                f"the M1 protocol requires at least {REQUIRED_WARMUP_REQUESTS} warmup requests"
+            )
+        if args.measured_requests < REQUIRED_MEASURED_REQUESTS:
+            raise ValueError(
+                f"the M1 protocol requires at least {REQUIRED_MEASURED_REQUESTS} measured requests"
+            )
 
     request_path = Path(args.request).resolve()
     request = EvaluateRequest.model_validate_json(request_path.read_text(encoding="utf-8"))
@@ -84,6 +91,11 @@ def run(args: argparse.Namespace) -> int:
     if len(artifact_ids) != 1:
         raise ValueError(f"benchmark observed multiple artifacts: {sorted(artifact_ids)}")
 
+    protocol_compliant = (
+        args.warmup_requests >= REQUIRED_WARMUP_REQUESTS
+        and args.measured_requests >= REQUIRED_MEASURED_REQUESTS
+    )
+
     result = {
         "schema_version": 1,
         "created_at": datetime.now(UTC).isoformat(),
@@ -94,6 +106,10 @@ def run(args: argparse.Namespace) -> int:
             "state_tokens": args.expected_state_tokens,
             "questions_per_request": args.expected_questions,
             "primitive": "boolean",
+            "required_warmup_requests": REQUIRED_WARMUP_REQUESTS,
+            "required_measured_requests": REQUIRED_MEASURED_REQUESTS,
+            "protocol_compliant": protocol_compliant,
+            "smoke": bool(getattr(args, "smoke", False)),
         },
         "request_sha256": sha256_file(request_path),
         "artifact_id": next(iter(artifact_ids)),
@@ -109,7 +125,8 @@ def run(args: argparse.Namespace) -> int:
             "server_p95": _percentile(server_totals, 0.95),
         },
         "failures": failures,
-        "p95_two_second_gate_passed": _percentile(client_latencies, 0.95) <= 2_000,
+        "p95_two_second_latency_observed": _percentile(client_latencies, 0.95) <= 2_000,
+        "gate_passed": protocol_compliant and _percentile(client_latencies, 0.95) <= 2_000,
     }
     result["evidence_sha256"] = stable_json_sha256(
         {key: value for key, value in result.items() if key not in {"created_at", "evidence_sha256"}}
@@ -120,7 +137,7 @@ def run(args: argparse.Namespace) -> int:
         json.dump(result, handle, indent=2, sort_keys=True)
         handle.write("\n")
     print(json.dumps(result, indent=2, sort_keys=True))
-    return 0 if result["p95_two_second_gate_passed"] else 2
+    return 0 if result["gate_passed"] else 2
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -128,12 +145,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--request", required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--output", default="artifacts/m1/http-latency.json")
-    parser.add_argument("--warmup-requests", type=int, default=20)
-    parser.add_argument("--measured-requests", type=int, default=200)
+    parser.add_argument("--warmup-requests", type=int, default=REQUIRED_WARMUP_REQUESTS)
+    parser.add_argument("--measured-requests", type=int, default=REQUIRED_MEASURED_REQUESTS)
     parser.add_argument("--expected-state-tokens", type=int, default=2_048)
     parser.add_argument("--expected-questions", type=int, default=16)
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
-    parser.add_argument("--smoke", action="store_true", help="Allow smaller warmup and measurement counts for smoke testing.")
+    parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help=(
+            "Allow smaller warmup and measurement counts for smoke testing. "
+            "Smoke runs record protocol_compliant=false and can never pass the gate."
+        ),
+    )
     return parser.parse_args(argv)
 
 

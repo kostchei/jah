@@ -1,73 +1,121 @@
-# Walkthrough: Public Human Benchmark Calibration & LoRA Head Adaptation
+# Walkthrough: public human benchmark calibration and LoRA head adaptation
 
-We have calibrated the frozen Qwen 3.5-4B baseline on the 3 public human-labeled workloads, built the M4 LoRA head adaptation engine with standalone CLI tooling (`jah-train`), trained an adapted decision head on the RTX 4090, and demonstrated significant quality improvements on held-out development data.
+This document describes what was run and what it measured. Gate verdicts are **not** written
+here; they are rendered from the recorded artifacts into [EVIDENCE.md](EVIDENCE.md) by
+`jah-report generate`. Where a number below is load-bearing, the artifact that holds it is named.
 
----
-
-## 1. Temperature Calibration Summary ([artifacts/public/calibration-summary.json](artifacts/public/calibration-summary.json))
-
-All **2,565 calibration split decisions** were evaluated and calibrated via 1D golden-section search over negative log-likelihood:
-
-| Workload | Decisions | Primitive | Fitted Temp $T$ | 10-Bin ECE | Brier Score | Baseline Prevalence Brier | Gate Status |
-| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **`banking77-16-intent-v1`** | 240 | Choice (16-way) | **1.3522** | **0.0475** | **0.2348** | 0.9292 | **ECE & Brier Passed** |
-| **`wikiqa-answer-relevance-v1`** | 1,883 | Boolean | **0.7999** | **0.0454** | 0.2994 | 0.0996 | **ECE Passed** |
-| **`asap2-source-essay-v1`** | 442 | Score (Ordinal) | **1.2162** | 0.0945 | 0.7708 | 0.7490 | Review-only (Zero-shot gap) |
-
-Profiles are versioned and stored in [configs/profiles/public/](configs/profiles/public/).
+**Scope.** Every result on this page is measured on the **development** or **calibration**
+partition of a public benchmark. The locked test partition has never been opened. No result here
+certifies a workload for automatic acceptance, and `release_annotation_ready` is `false` in every
+report.
 
 ---
 
-## 2. LoRA Head Adaptation & Training Trajectory
+## 1. Temperature calibration on the public benchmark
 
-We built the standalone trainer [`jah-train`](src/jah/training/train.py) with dynamic module injection, activation memory optimization via gradient checkpointing, and candidate-restricted cross-entropy loss.
+2,565 calibration-split decisions were scored and a scalar temperature fitted per workload by
+golden-section search over negative log-likelihood.
 
-### Training Configuration & Compute:
-- **Backbone**: Qwen 3.5-4B (BF16, RTX 4090)
-- **Target Modules**: `q_proj`, `v_proj`, `lm_head` (17 LoRA modules)
-- **Trainable Parameters**: **2,924,544** / 4,542,190,080 (**0.064%**)
-- **Training Samples**: 1,000 balanced decisions across public workloads
-- **Optimizer**: AdamW ($\text{lr} = 10^{-4}$, $\text{batch\_size} = 4$, $\text{accum\_steps} = 4$, $\text{max\_grad\_norm} = 1.0$)
-- **Compute Time**: **311.3 seconds** (5.18 minutes) across 250 optimizer steps
+Artifact: [artifacts/public/calibration-summary.json](artifacts/public/calibration-summary.json).
+Profiles: [configs/profiles/public/](configs/profiles/public/).
 
-### Loss Convergence:
-```text
-Step   1  | Example   4 | Loss: 0.9340
-Step  25  | Example 100 | Loss: 0.6541
-Step  50  | Example 200 | Loss: 0.0185
-Step 100  | Example 400 | Loss: 0.0143
-Step 150  | Example 600 | Loss: 0.0011
-Step 200  | Example 800 | Loss: 0.0650
-Step 250  | Example 999 | Loss: 0.0001 (Final: 0.00005)
+| Workload | Primitive | Fitted T | 10-bin ECE | Brier | Prevalence Brier | NLL |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `banking77-16-intent-v1` | choice (16-way) | 1.3522 | 0.047522 | 0.234752 | 0.929201 | 0.640459 |
+| `wikiqa-answer-relevance-v1` | boolean | 0.7999 | 0.045374 | 0.299406 | 0.099623 | 0.458021 |
+| `asap2-source-essay-v1` | score (6 ordinal levels) | 1.2162 | 0.094514 | 0.770769 | 0.748971 | 1.568374 |
+
+Read the last two columns together. The specification requires a Brier score no worse than the
+prevalence baseline:
+
+- **banking77** beats its prevalence baseline by a wide margin.
+- **WikiQA** is roughly three times worse than its prevalence baseline. The corpus is about 5%
+  positive, so a constant negative predictor scores better. A single scalar temperature cannot
+  correct a base-rate error; this is the subject of Phase 2.1 of
+  [REMEDIATION_PLAN.md](REMEDIATION_PLAN.md).
+- **ASAP** is worse than its prevalence baseline and misses the ECE gate. Accuracy across the six
+  ordinal levels is roughly 35%.
+
+One of three declared workloads currently passes both calibration gates.
+
+---
+
+## 2. LoRA head adaptation
+
+Trainer: [`jah-train`](src/jah/training/train.py), with dynamic module injection, gradient
+checkpointing, and candidate-restricted cross-entropy.
+
+- Backbone `Qwen/Qwen3.5-4B`, BF16, RTX 4090.
+- Target modules `q_proj`, `v_proj`, `lm_head`; 17 injected LoRA modules.
+- Trainable parameters 2,924,544 of 4,542,190,080 (0.064%).
+- 999 training samples, drawn from the **train** split only
+  ([train.py](src/jah/training/train.py) filters on the split manifest before sampling).
+- AdamW, lr 1e-4, batch size 4, accumulation 4, gradient clipping 1.0.
+- 250 optimizer steps in 311.3 seconds.
+
+Final training loss is 5e-05. A loss that low on 999 samples indicates the adapter has largely
+memorized its training partition; it is a training-set observation, not a quality claim.
+
+Bundle: [artifacts/adapters/qwen3.5-4b-public-head-v1/](artifacts/adapters/qwen3.5-4b-public-head-v1/),
+with `adapter_weights.pt`, a manifest carrying the base revision and dataset hash, and
+`training-report.json`.
+
+---
+
+## 3. Baseline against adapted head
+
+Both runs cover the 297 held-out decisions of the `banking77-16-intent-v1` **development**
+partition, under identical prompts and hardware.
+
+Artifacts: [baseline-banking77-dev.json](artifacts/public/baseline-banking77-dev.json),
+[adapted-banking77-dev.json](artifacts/public/adapted-banking77-dev.json).
+
+| Measure | Frozen baseline | Adapted head | Change |
+| --- | ---: | ---: | ---: |
+| Accuracy | 0.828283 | 0.915825 | +0.087542 |
+| Balanced accuracy | 0.821928 | 0.914154 | +0.092226 |
+| Macro-F1 | 0.812567 | 0.911191 | +0.098624 |
+| Brier score | 0.264617 | 0.152478 | -0.112139 |
+| NLL | 0.737278 | 0.444016 | -0.293262 |
+| ECE | 0.054125 | 0.054195 | +0.000070 |
+| Median request latency (ms) | 89.59 | 88.51 | -1.08 |
+| P95 request latency (ms) | 118.13 | 114.48 | -3.65 |
+
+Three qualifications belong with that table:
+
+1. **ECE did not improve.** Both runs record `gate_ece_passed: false`. The adapter sharpened the
+   distribution (Brier and NLL fell) without improving reliability.
+2. **Coverage is zero in both runs.** No calibration profile was attached at evaluation time, so
+   every decision routed to review and the selective-error gate was not exercised. Phase 2.3 of
+   the remediation plan addresses this.
+3. **No uncertainty interval.** The +0.0875 accuracy difference carries no bootstrap interval
+   grouped by source group. Phase 3 addresses this.
+
+---
+
+## 4. What this evidence does not establish
+
+- **Contamination is unknown.** banking77 is a widely published benchmark and is likely present in
+  the backbone's pretraining corpus, as
+  [artifacts/public/import-report.json](artifacts/public/import-report.json) states in its own
+  limitations. Part of the 0.9158 may be recall rather than capability.
+- **Upstream labels are not local adjudication.** The suite carries upstream human labels from
+  banking77, WikiQA, and ASAP 2.0. No independent local adjudication was performed, so
+  `release_annotation_ready` remains `false`.
+- **The locked test is intact.** No quality claim here is a release claim.
+
+---
+
+## 5. Verification state
+
+```powershell
+.venv\Scripts\python.exe -m pytest          # default suite, mocked backends
+.venv\Scripts\python.exe -m pytest -m gpu   # requires the pinned backbone on CUDA
+.venv\Scripts\ruff.exe check .
+.venv\Scripts\python.exe -m jah.report check
 ```
 
-Exported artifact bundle in [`artifacts/adapters/qwen3.5-4b-public-head-v1/`](artifacts/adapters/qwen3.5-4b-public-head-v1/):
-- `adapter_weights.pt` (5.8 MB, SHA-256: `b8c2b772...`)
-- `adapter_manifest.json` (SHA-verified against dataset hash `5a817155...`)
-- `training-report.json` (loss history and training telemetry)
-
----
-
-## 3. Side-by-Side Evaluation: Baseline vs. Tuned Head
-
-Evaluated on the **`banking77-16-intent-v1` development partition** (297 held-out human decisions, 16-way intent classification) under identical prompt and hardware conditions:
-
-| Metric | Frozen Baseline (Direct Logits) | Adapted LoRA Head (`qwen3.5-4b-public-head-v1`) | Absolute Change ($\Delta$) | Status |
-| :--- | :---: | :---: | :---: | :---: |
-| **Accuracy** | 82.83% | **91.58%** | **+8.75%** | **Significant Lift** |
-| **Balanced Accuracy** | 82.19% | **91.42%** | **+9.23%** | **Significant Lift** |
-| **Macro-F1** | 0.8126 | **0.9112** | **+0.0986** | **Exceeds 0.85 Target** |
-| **Brier Score** | 0.2646 | **0.1525** | **-42.4% error** | **Improved Reliability** |
-| **Negative Log-Likelihood** | 0.7373 | **0.4440** | **-39.8% NLL** | **Sharper Calibration** |
-| **Median Request Latency** | 89.59 ms | **88.51 ms** | -1.08 ms | **Sub-100ms Preserved** |
-| **$P_{95}$ Request Latency** | 118.13 ms | **114.48 ms** | -3.65 ms | **Sub-200ms Preserved** |
-
-Evidence files:
-- Baseline: [`artifacts/public/baseline-banking77-dev.json`](artifacts/public/baseline-banking77-dev.json)
-- Adapted Head: [`artifacts/public/adapted-banking77-dev.json`](artifacts/public/adapted-banking77-dev.json)
-
----
-
-## 4. Test Suite Status
-- **117 / 117 tests pass** in `pytest` across all suites.
-- **Ruff check**: 0 warnings.
+The default suite runs in a few seconds because it scores mocked tensors. Properties that only
+exist with real weights loaded — tokenizer label boundaries, last-token indexing, prefix-cache
+agreement, adapter attachment — live in the `gpu` tier
+([tests/test_gpu_backend.py](tests/test_gpu_backend.py)).

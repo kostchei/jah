@@ -1,5 +1,17 @@
+# RETIRED AS AN EVALUATION SUITE.
+#
+# The 141 rows in evals/data/m1-suite.jsonl were generated and labeled by qwen/qwen3.8-27b and
+# then scored by the backbone, so they cannot measure decision quality or calibration
+# (JEV_AT_HOME_SPEC.md, ADR-06). Scored against them the direct path reported macro-F1 1.000 and
+# a Brier score of 3.15e-16 on 22 development decisions.
+#
+# The file is kept only as a fast smoke fixture covering all three primitives without loading the
+# public suite. Real evaluation uses configs/evals/public-suite.yaml.
 schema_version: 1
 suite_id: m1-initial-suite-v1
+purpose: smoke-fixture-only
+production_release_approved: false
+evaluation_approved: false
 dataset: evals/data/m1-suite.jsonl
 minimum_decisions: 120
 required_primitives: [choice, boolean, score]

@@ -52,8 +52,9 @@ class CalibrationProfile(StrictModel):
     cardinality_range: tuple[int, int]
 
     # Calibrator configuration
-    method: Literal["temperature_scaling", "identity"] = "temperature_scaling"
+    method: Literal["temperature_scaling", "vector_scaling", "identity"] = "temperature_scaling"
     temperature: Annotated[float, Field(gt=0.0)] = 1.0
+    bias: list[float] | None = None
 
     # Acceptance policy
     policy: AcceptancePolicy = Field(default_factory=AcceptancePolicy)
@@ -187,6 +188,70 @@ def fit_temperature_scaling(
             fd = nll_at(d)
 
     return (a + b) / 2.0
+
+
+def fit_vector_scaling(
+    logits_list: list[list[float]],
+    targets: list[int],
+    *,
+    initial_temperature: float = 1.0,
+    max_iter: int = 100,
+) -> tuple[float, list[float]]:
+    """Fit scalar temperature T and bias vector b minimizing NLL via L-BFGS."""
+    import torch
+    import torch.nn.functional as F
+
+    if len(logits_list) != len(targets):
+        raise ValueError("logits and targets must have equal length")
+    if not logits_list:
+        return 1.0, []
+
+    K = len(logits_list[0])
+    z = torch.tensor(logits_list, dtype=torch.float32)
+    y = torch.tensor(targets, dtype=torch.long)
+
+    init_w = math.log(max(0.05, initial_temperature))
+    log_t = torch.tensor([init_w], dtype=torch.float32, requires_grad=True)
+    b = torch.zeros(K, dtype=torch.float32, requires_grad=True)
+
+    optimizer = torch.optim.LBFGS(
+        [log_t, b], lr=0.5, max_iter=max_iter, tolerance_grad=1e-7, tolerance_change=1e-9
+    )
+
+    def closure():
+        optimizer.zero_grad()
+        t = torch.exp(log_t) + 1e-4
+        scaled = z / t + b
+        loss = F.cross_entropy(scaled, y)
+        loss.backward()
+        return loss
+
+    optimizer.step(closure)
+
+    with torch.no_grad():
+        final_t = float((torch.exp(log_t) + 1e-4).item())
+        b_centered = b - b.mean()
+        final_b = [round(float(val.item()), 6) for val in b_centered]
+
+    return round(max(0.05, min(10.0, final_t)), 4), final_b
+
+
+def compute_prior_correction(
+    targets: list[int],
+    num_classes: int,
+    uncalibrated_probs: list[list[float]],
+) -> list[float]:
+    """Compute per-class logit bias based on target empirical prior vs average model probability."""
+    counts = Counter(targets)
+    total = len(targets)
+    target_priors = [max(counts[k], 1) / total for k in range(num_classes)]
+    avg_model_priors = [
+        max(sum(p[k] for p in uncalibrated_probs) / len(uncalibrated_probs), 1e-6)
+        for k in range(num_classes)
+    ]
+    shifts = [math.log(tp) - math.log(mp) for tp, mp in zip(target_priors, avg_model_priors, strict=True)]
+    mean_shift = sum(shifts) / len(shifts)
+    return [round(s - mean_shift, 6) for s in shifts]
 
 
 def compute_nll(

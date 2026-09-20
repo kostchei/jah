@@ -71,9 +71,10 @@ def rescale_logits(
     logits: dict[str, float],
     temperature: float,
     *,
+    bias: dict[str, float] | list[float] | None = None,
     option_values: tuple[float, ...] | None = None,
 ) -> ScoredDecision:
-    """Compute temperature-scaled FP32 probabilities from unnormalized logits."""
+    """Compute temperature-scaled and optional bias-adjusted FP32 probabilities."""
     import math
 
     if temperature <= 0:
@@ -81,8 +82,19 @@ def rescale_logits(
     if not logits:
         raise ValueError("logits cannot be empty")
 
-    max_logit = max(logits.values())
-    exp_logits = {k: math.exp((v - max_logit) / temperature) for k, v in logits.items()}
+    bias_dict: dict[str, float] = {}
+    if bias is not None:
+        if isinstance(bias, dict):
+            bias_dict = bias
+        elif isinstance(bias, (list, tuple)):
+            bias_dict = dict(zip(logits.keys(), bias, strict=False))
+
+    scaled_logits = {
+        k: (v / temperature) + bias_dict.get(k, 0.0)
+        for k, v in logits.items()
+    }
+    max_scaled = max(scaled_logits.values())
+    exp_logits = {k: math.exp(v - max_scaled) for k, v in scaled_logits.items()}
     total_exp = sum(exp_logits.values())
     probabilities = {k: v / total_exp for k, v in exp_logits.items()}
 

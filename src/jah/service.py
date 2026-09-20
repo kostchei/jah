@@ -37,7 +37,7 @@ def load_reference_engine(
     backend = HuggingFaceDirectLogitBackend(
         config["model_id"], config["revision"], device=config["device"]
     )
-    p_dir = Path(profiles_dir or os.environ.get("JAH_PROFILES_DIR", "configs/profiles"))
+    p_dir = Path(profiles_dir or os.environ.get("JAH_PROFILES_DIR", "configs/profiles/public"))
     profiles = load_profile_registry(p_dir)
     model_metadata = {
         "model_id": config.get("model_id"),
@@ -52,6 +52,11 @@ def load_reference_engine(
         "true",
         "yes",
     )
+    force_sequential = os.environ.get("JAH_FORCE_SEQUENTIAL", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     engine = DecisionEngine(
         backend,
         EngineConfig(
@@ -61,6 +66,7 @@ def load_reference_engine(
             model_metadata=model_metadata,
             microbatch_size=microbatch_size,
             enable_prefix_cache=enable_prefix_cache,
+            force_sequential=force_sequential,
         ),
     )
     warmup = EvaluateRequest.model_validate(
@@ -182,9 +188,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
-    parser.add_argument("--profiles-dir", default="configs/profiles")
+    parser.add_argument("--profiles-dir", default="configs/profiles/public")
     parser.add_argument("--microbatch-size", type=int, default=16)
     parser.add_argument("--disable-prefix-cache", action="store_true", default=False)
+    parser.add_argument(
+        "--force-sequential",
+        action="store_true",
+        default=False,
+        help=(
+            "Serve every question through the single-item reference path (ADR-02). "
+            "Used to measure the unoptimized baseline the speedup claim divides by."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -194,6 +209,7 @@ def main(argv: list[str] | None = None) -> None:
     os.environ["JAH_PROFILES_DIR"] = args.profiles_dir
     os.environ["JAH_MICROBATCH_SIZE"] = str(args.microbatch_size)
     os.environ["JAH_ENABLE_PREFIX_CACHE"] = "false" if args.disable_prefix_cache else "true"
+    os.environ["JAH_FORCE_SEQUENTIAL"] = "true" if args.force_sequential else "false"
     import uvicorn
 
     uvicorn.run("jah.service:app", host=args.host, port=args.port, factory=False)

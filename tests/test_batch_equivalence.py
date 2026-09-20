@@ -145,3 +145,46 @@ def test_optimization_equivalence_gates():
         for lbl in labels
     )
     assert max_dev <= 0.01
+
+
+def test_force_sequential_bypasses_the_optimized_path() -> None:
+    """The ADR-02 reference path must stay reachable for the equivalence measurement."""
+
+    class CountingBackend(FakeBackend):
+        def __init__(self) -> None:
+            self.batch_calls = 0
+            self.single_calls = 0
+
+        def score(self, question):
+            self.single_calls += 1
+            return super().score(question)
+
+        def score_batch(self, questions, *, microbatch_size=16, use_prefix_cache=True):
+            self.batch_calls += 1
+            return [super(CountingBackend, self).score(question) for question in questions]
+
+    request = EvaluateRequest.model_validate(
+        {
+            "state": "Shared state for two independent questions.",
+            "questions": {
+                "a": {"type": "boolean", "instructions": "Judge.", "proposition": "First."},
+                "b": {"type": "boolean", "instructions": "Judge.", "proposition": "Second."},
+            },
+        }
+    )
+
+    optimized_backend = CountingBackend()
+    optimized = DecisionEngine(
+        optimized_backend, EngineConfig(artifact_id="test", force_sequential=False)
+    ).evaluate(request)
+    assert optimized_backend.batch_calls == 1
+    assert optimized_backend.single_calls == 0
+
+    reference_backend = CountingBackend()
+    reference = DecisionEngine(
+        reference_backend, EngineConfig(artifact_id="test", force_sequential=True)
+    ).evaluate(request)
+    assert reference_backend.batch_calls == 0
+    assert reference_backend.single_calls == 2
+
+    assert set(optimized.answers) == set(reference.answers)

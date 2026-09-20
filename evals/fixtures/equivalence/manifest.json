@@ -1,0 +1,70 @@
+{
+  "fixtures": {
+    "asap-mixed-04": {
+      "primitives": [
+        "boolean",
+        "choice",
+        "score"
+      ],
+      "questions": 4,
+      "sha256": "e59e422e4bf8d7511124f753437ab226abf7747ba19d156b1ae95d172decd9b8"
+    },
+    "asap-mixed-13": {
+      "primitives": [
+        "boolean",
+        "choice",
+        "score"
+      ],
+      "questions": 13,
+      "sha256": "34415574eb274efec12e2bc2ca7dd6a7b781f628d9e19b382824e5d4e1845375"
+    },
+    "asap-score-08": {
+      "primitives": [
+        "score"
+      ],
+      "questions": 8,
+      "sha256": "bba75ff87cae25c9868b847453c13b236b8d2fc98217492d244a0930acd998b8"
+    },
+    "banking-choice-02": {
+      "primitives": [
+        "choice"
+      ],
+      "questions": 2,
+      "sha256": "41209011948f7cf04a7f8cde0fc12f49469fe5e7f239ddd917e0d93ae98c164d"
+    },
+    "benchmark-2048-16b": {
+      "note": "Copied from the frozen 2,048-token, 16-Boolean latency benchmark request.",
+      "primitives": [
+        "boolean"
+      ],
+      "questions": 16,
+      "sha256": "0ef1cd8af5f3c63f3bd6693549a0ba7cccf0b1d8370246bb9144e4a9d7097661"
+    },
+    "wikiqa-boolean-02": {
+      "primitives": [
+        "boolean"
+      ],
+      "questions": 2,
+      "sha256": "700266f0e2593cf2c1041f739b239c8d97b4725aff99f119b90b497a672e1579"
+    },
+    "wikiqa-boolean-08": {
+      "primitives": [
+        "boolean"
+      ],
+      "questions": 8,
+      "sha256": "994292c3b4ad13770a25e3aa918d15b2737b607aa78f7ef43e69375d5d73bfef"
+    },
+    "wikiqa-boolean-16": {
+      "primitives": [
+        "boolean"
+      ],
+      "questions": 16,
+      "sha256": "f0564de702c442464d61ebdfc6b46f5c0109a5a2019e93b5edbbf6c5e67d64d5"
+    }
+  },
+  "manifest_sha256": "07036c0f6097d71bd9315c3b8523208ce73a367c91487146bba481c49b151d9c",
+  "purpose": "Optimization-equivalence regression set. Content is real public suite text; reference labels are deliberately absent because this set measures agreement between execution paths, not decision quality.",
+  "schema_version": 1,
+  "source_suite": "E:/jah/evals/data/public/suite.jsonl",
+  "source_suite_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed"
+}
