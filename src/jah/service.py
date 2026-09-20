@@ -46,6 +46,12 @@ def load_reference_engine(
         "prompt_version": config.get("prompt_version"),
         "label_version": config.get("label_version"),
     }
+    microbatch_size = int(os.environ.get("JAH_MICROBATCH_SIZE", "16"))
+    enable_prefix_cache = os.environ.get("JAH_ENABLE_PREFIX_CACHE", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     engine = DecisionEngine(
         backend,
         EngineConfig(
@@ -53,6 +59,8 @@ def load_reference_engine(
             maximum_input_tokens=config["maximum_input_tokens"],
             profiles=profiles,
             model_metadata=model_metadata,
+            microbatch_size=microbatch_size,
+            enable_prefix_cache=enable_prefix_cache,
         ),
     )
     warmup = EvaluateRequest.model_validate(
@@ -175,6 +183,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
     parser.add_argument("--profiles-dir", default="configs/profiles")
+    parser.add_argument("--microbatch-size", type=int, default=16)
+    parser.add_argument("--disable-prefix-cache", action="store_true", default=False)
     return parser.parse_args(argv)
 
 
@@ -182,6 +192,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     os.environ["JAH_MODEL_CONFIG"] = args.model_config
     os.environ["JAH_PROFILES_DIR"] = args.profiles_dir
+    os.environ["JAH_MICROBATCH_SIZE"] = str(args.microbatch_size)
+    os.environ["JAH_ENABLE_PREFIX_CACHE"] = "false" if args.disable_prefix_cache else "true"
     import uvicorn
 
     uvicorn.run("jah.service:app", host=args.host, port=args.port, factory=False)

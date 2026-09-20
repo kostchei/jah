@@ -40,10 +40,12 @@ class EngineConfig:
     maximum_input_tokens: int = 8_192
     profiles: dict[str, CalibrationProfile] = field(default_factory=dict)
     model_metadata: dict[str, Any] = field(default_factory=dict)
+    microbatch_size: int = 16
+    enable_prefix_cache: bool = True
 
 
 class DecisionEngine:
-    """Compile and score an entire request atomically on the reference path."""
+    """Compile and score an entire request atomically."""
 
     def __init__(self, backend: ScoringBackend, config: EngineConfig) -> None:
         self.backend = backend
@@ -57,12 +59,19 @@ class DecisionEngine:
             max_input_tokens=self.config.maximum_input_tokens,
         )
 
-        # Score sequentially for the M1 correctness reference. The current backbone showed
-        # prediction changes under naive padding/batching during M0 diagnostics.
         measurements = []
         try:
-            for question in compiled:
-                measurements.append(self.backend.score(question))
+            if hasattr(self.backend, "score_batch") and len(compiled) > 1:
+                measurements = list(
+                    self.backend.score_batch(
+                        compiled,
+                        microbatch_size=self.config.microbatch_size,
+                        use_prefix_cache=self.config.enable_prefix_cache,
+                    )
+                )
+            else:
+                for question in compiled:
+                    measurements.append(self.backend.score(question))
         except InferenceUnavailableError:
             raise
         except Exception as exc:

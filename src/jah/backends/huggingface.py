@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from jah.compiler import CompiledQuestion
@@ -79,3 +80,38 @@ class HuggingFaceDirectLogitBackend:
             input_tokens=int(encoded["input_ids"].shape[-1]),
             peak_vram_bytes=int(peak),
         )
+
+    def score_batch(
+        self,
+        questions: Sequence[CompiledQuestion],
+        *,
+        temperature: float = 1.0,
+        microbatch_size: int = 16,
+        use_prefix_cache: bool = True,
+    ) -> list[InferenceMeasurement]:
+        from jah.backends.batching import batch_score_full_prompt
+        from jah.backends.prefix_cache import can_extract_prefix, score_with_prefix_cache
+
+        if not questions:
+            return []
+        if len(questions) == 1:
+            return [self.score(questions[0], temperature=temperature)]
+
+        if use_prefix_cache and can_extract_prefix(questions):
+            return score_with_prefix_cache(
+                self.model,
+                self.tokenizer,
+                questions,
+                device=self.device,
+                temperature=temperature,
+            )
+
+        return batch_score_full_prompt(
+            self.model,
+            self.tokenizer,
+            questions,
+            device=self.device,
+            temperature=temperature,
+            microbatch_size=microbatch_size,
+        )
+
