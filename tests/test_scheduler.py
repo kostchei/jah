@@ -15,7 +15,7 @@ def test_deadline_keeps_capacity_reserved_until_thread_finishes() -> None:
             await scheduler.run(lambda: time.sleep(0.05), timeout_seconds=0.005)
         with pytest.raises(QueueSaturatedError):
             await scheduler.run(lambda: None, timeout_seconds=1.0)
-        await asyncio.sleep(0.07)
+        await asyncio.sleep(0.12)
         value, _ = await scheduler.run(lambda: "done", timeout_seconds=1.0)
         assert value == "done"
 

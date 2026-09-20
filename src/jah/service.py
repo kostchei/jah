@@ -24,20 +24,35 @@ DEFAULT_DEADLINE_MS = 30_000
 MAXIMUM_DEADLINE_MS = 300_000
 
 
-def load_reference_engine(model_config_path: str | Path | None = None) -> DecisionEngine:
+def load_reference_engine(
+    model_config_path: str | Path | None = None,
+    profiles_dir: str | Path | None = None,
+) -> DecisionEngine:
     """Load, validate, and warm the pinned reference artifact."""
     from jah.backends.huggingface import HuggingFaceDirectLogitBackend
+    from jah.calibration import load_profile_registry
 
     path = Path(model_config_path or os.environ.get("JAH_MODEL_CONFIG", "configs/models/qwen3.5-4b.yaml"))
     config = load_yaml(path)
     backend = HuggingFaceDirectLogitBackend(
         config["model_id"], config["revision"], device=config["device"]
     )
+    p_dir = Path(profiles_dir or os.environ.get("JAH_PROFILES_DIR", "configs/profiles"))
+    profiles = load_profile_registry(p_dir)
+    model_metadata = {
+        "model_id": config.get("model_id"),
+        "revision": config.get("revision"),
+        "precision": config.get("precision"),
+        "prompt_version": config.get("prompt_version"),
+        "label_version": config.get("label_version"),
+    }
     engine = DecisionEngine(
         backend,
         EngineConfig(
             artifact_id=config["artifact_id"],
             maximum_input_tokens=config["maximum_input_tokens"],
+            profiles=profiles,
+            model_metadata=model_metadata,
         ),
     )
     warmup = EvaluateRequest.model_validate(
@@ -159,12 +174,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
+    parser.add_argument("--profiles-dir", default="configs/profiles")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     os.environ["JAH_MODEL_CONFIG"] = args.model_config
+    os.environ["JAH_PROFILES_DIR"] = args.profiles_dir
     import uvicorn
 
     uvicorn.run("jah.service:app", host=args.host, port=args.port, factory=False)

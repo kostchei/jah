@@ -4,14 +4,30 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import statistics
 import time
 from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 
+from jah.calibration import (
+    CalibrationMetrics,
+    CalibrationProfile,
+    compute_binomial_upper_bound,
+    compute_brier_score,
+    compute_ece,
+    compute_nll,
+    compute_prevalence_brier,
+    compute_selective_metrics,
+    fit_temperature_scaling,
+    load_profile_registry,
+    save_profile,
+)
+from jah.compiler import compile_request
 from jah.engine import DecisionEngine, EngineConfig
 from jah.m1_dataset import build_split_manifest, load_m1_dataset, validate_m1_suite
+from jah.policy import AcceptancePolicy, fit_acceptance_threshold
 from jah.schemas import ScoreAnswer
 from jah.workload import git_commit_sha, load_yaml, sha256_file, stable_json_sha256
 
@@ -127,11 +143,28 @@ def run_evaluation(args: argparse.Namespace) -> int:
     model_path = root / args.model_config
     model_config = load_yaml(model_path)
     backend = load_backend(args.backend, model_config)
+
+    profiles_dir_arg = getattr(args, "profiles_dir", None)
+    profiles = {}
+    if profiles_dir_arg:
+        p_path = root / profiles_dir_arg
+        if p_path.exists():
+            profiles = load_profile_registry(p_path)
+
+    model_metadata = {
+        "model_id": model_config.get("model_id"),
+        "revision": model_config.get("revision"),
+        "precision": model_config.get("precision"),
+        "prompt_version": model_config.get("prompt_version"),
+        "label_version": model_config.get("label_version"),
+    }
     engine = DecisionEngine(
         backend,
         EngineConfig(
             artifact_id=model_config["artifact_id"],
             maximum_input_tokens=model_config["maximum_input_tokens"],
+            profiles=profiles,
+            model_metadata=model_metadata,
         ),
     )
 
@@ -141,13 +174,26 @@ def run_evaluation(args: argparse.Namespace) -> int:
     grouped_predictions: dict[tuple[str, str], list[str]] = defaultdict(list)
     score_errors: dict[str, list[float]] = defaultdict(list)
     score_pairs: dict[str, list[tuple[int, int, int]]] = defaultdict(list)
+    calibrated_probs: dict[tuple[str, str], list[list[float]]] = defaultdict(list)
+    calibrated_targets: dict[tuple[str, str], list[int]] = defaultdict(list)
+    calibrated_confs: dict[tuple[str, str], list[float]] = defaultdict(list)
+    calibrated_accs: dict[tuple[str, str], list[int]] = defaultdict(list)
+    calibrated_dispositions: dict[tuple[str, str], list[str]] = defaultdict(list)
+    option_cardinalities: dict[tuple[str, str], int] = {}
+
     for example in selected:
+        req = example.request
+        if getattr(args, "use_workload_profiles", False):
+            req = example.request.model_copy(update={"profile": example.workload_id})
+
         started = time.perf_counter()
-        response = engine.evaluate(example.request, request_id=f"eval_{example.example_id}")
+        response = engine.evaluate(req, request_id=f"eval_{example.example_id}")
         request_latencies.append((time.perf_counter() - started) * 1_000)
-        for question_id, question in example.request.questions.items():
+        for question_id, question in req.questions.items():
             answer = response.answers[question_id]
             reference = example.reference_answers[question_id]
+            group = (example.workload_id, question.type)
+
             if isinstance(answer, ScoreAnswer):
                 reference_level = next(level for level in question.levels if level.id == reference)
                 value_range = question.levels[-1].value - question.levels[0].value
@@ -168,13 +214,34 @@ def run_evaluation(args: argparse.Namespace) -> int:
                 score_pairs[example.workload_id].append(
                     (reference_index, prediction_index, len(question.levels))
                 )
+                lvl_ids = [lvl.id for lvl in question.levels]
+                probs = [answer.probabilities[lid] for lid in lvl_ids]
+                t_idx = lvl_ids.index(reference)
+                opt_len = len(lvl_ids)
             else:
                 prediction = "true" if getattr(answer, "value", None) is True else (
                     "false" if getattr(answer, "value", None) is False else answer.value
                 )
-                group = (example.workload_id, question.type)
                 grouped_references[group].append(reference)
                 grouped_predictions[group].append(prediction)
+                if question.type == "boolean":
+                    probs = [answer.probabilities["false"], answer.probabilities["true"]]
+                    t_idx = 1 if reference == "true" else 0
+                    opt_len = 2
+                else:
+                    opt_ids = [opt.id for opt in question.options]
+                    probs = [answer.probabilities[oid] for oid in opt_ids]
+                    t_idx = opt_ids.index(reference)
+                    opt_len = len(opt_ids)
+
+            calibrated_probs[group].append(probs)
+            calibrated_targets[group].append(t_idx)
+            calibrated_confs[group].append(max(probs))
+            is_correct = 1 if prediction == reference else 0
+            calibrated_accs[group].append(is_correct)
+            calibrated_dispositions[group].append(answer.disposition)
+            option_cardinalities[group] = opt_len
+
             rows.append(
                 {
                     "example_id": example.example_id,
@@ -202,6 +269,55 @@ def run_evaluation(args: argparse.Namespace) -> int:
             "quadratic_weighted_kappa": _quadratic_weighted_kappa(score_pairs[workload]),
         }
 
+    # Add calibration and selective decision metrics per workload
+    for group, probs_g in calibrated_probs.items():
+        workload, primitive = group
+        key = f"{workload}/{primitive}"
+        if key not in metrics:
+            continue
+        targets_g = calibrated_targets[group]
+        confs_g = calibrated_confs[group]
+        accs_g = calibrated_accs[group]
+        disps_g = calibrated_dispositions[group]
+        num_classes = option_cardinalities[group]
+
+        ece, _ = compute_ece(confs_g, accs_g, num_bins=10, equal_count=True)
+        brier = compute_brier_score(probs_g, targets_g)
+        prev_brier = compute_prevalence_brier(targets_g, num_classes)
+        nll = compute_nll(probs_g, targets_g)
+
+        accepted = [acc for acc, disp in zip(accs_g, disps_g, strict=True) if disp == "accept"]
+        accepted_count = len(accepted)
+        review_count = len(accs_g) - accepted_count
+        coverage = accepted_count / len(accs_g) if accs_g else 0.0
+        errors = sum(1 for a in accepted if a == 0)
+        accepted_error_rate = (errors / accepted_count) if accepted_count else 0.0
+        bound_95 = compute_binomial_upper_bound(errors, accepted_count, confidence=0.95)
+
+        gate_ece = (ece <= 0.05)
+        gate_brier = (brier <= prev_brier)
+        gate_selective = (coverage >= 0.50 and bound_95 <= 0.05)
+        samples_sufficient = (accepted_count >= 59)
+
+        metrics[key]["calibration"] = {
+            "ece": ece,
+            "brier_score": brier,
+            "prevalence_brier": prev_brier,
+            "nll": nll,
+            "gate_passed": gate_ece and gate_brier,
+            "gate_ece_passed": gate_ece,
+            "gate_brier_passed": gate_brier,
+        }
+        metrics[key]["selective"] = {
+            "accepted_count": accepted_count,
+            "review_count": review_count,
+            "coverage": coverage,
+            "accepted_error_rate": accepted_error_rate,
+            "accepted_error_95_upper_bound": bound_95,
+            "samples_sufficient_for_gate": samples_sufficient,
+            "gate_passed": gate_selective,
+        }
+
     predictions_path = root / args.predictions
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
     with predictions_path.open("w", encoding="utf-8", newline="\n") as handle:
@@ -212,6 +328,11 @@ def run_evaluation(args: argparse.Namespace) -> int:
         "created_at": datetime.now(UTC).isoformat(),
         "source_commit_sha": git_commit_sha(root),
         "backend": args.backend,
+        "evaluation_scope": (
+            "public-benchmark" if any(e.public_source is not None for e in selected)
+            else "workload-evaluation"
+        ),
+        "release_annotation_ready": readiness["release_annotation_ready"],
         "artifact_id": model_config["artifact_id"],
         "model_config_sha256": sha256_file(model_path),
         "dataset_sha256": manifest["dataset_sha256"],
@@ -325,6 +446,11 @@ def compare_reports(args: argparse.Namespace) -> int:
                 "gate_passed": metric_gate,
             }
         gates.append(metric_gate)
+        if "calibration" in direct_metric:
+            paired_metrics[name]["calibration"] = direct_metric["calibration"]
+            gates.append(direct_metric["calibration"]["gate_passed"])
+        if "selective" in direct_metric:
+            paired_metrics[name]["selective"] = direct_metric["selective"]
 
     direct_median = direct["latency_ms"]["median_request"]
     generative_median = generative["latency_ms"]["median_request"]
@@ -367,6 +493,220 @@ def compare_reports(args: argparse.Namespace) -> int:
     return 0 if result["all_provisional_gates_passed"] else 2
 
 
+def run_calibration(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    dataset_path = root / args.dataset
+    examples = load_m1_dataset(dataset_path)
+    min_decisions, allowed_statuses = _load_suite_validation_params(
+        root, getattr(args, "suite_config", None)
+    )
+    readiness = validate_m1_suite(
+        examples, minimum_decisions=min_decisions, allowed_statuses=allowed_statuses
+    )
+    if not readiness["ready"]:
+        raise ValueError("M1 suite is not ready: " + "; ".join(readiness["failures"]))
+    manifest = build_split_manifest(
+        examples,
+        dataset_path=dataset_path,
+        seed=args.split_seed,
+        dataset_label=Path(args.dataset).as_posix(),
+    )
+    calibration_examples = [
+        e for e in examples if manifest["assignments"][e.example_id] == "calibration"
+    ]
+    if not calibration_examples:
+        raise ValueError("calibration split contains no examples")
+
+    model_path = root / args.model_config
+    model_config = load_yaml(model_path)
+    backend = load_backend("direct", model_config)
+
+    # Group data by workload
+    workload_data: dict[str, dict] = defaultdict(lambda: {
+        "primitive": None,
+        "option_ids": None,
+        "option_values": None,
+        "logits_list": [],
+        "targets": [],
+        "confidences_raw": [],
+        "accuracies_raw": [],
+        "public_benchmark": False,
+    })
+
+    for example in calibration_examples:
+        compiled = compile_request(example.request, tokenizer=backend.tokenizer)
+        for q_compiled in compiled:
+            question_id = q_compiled.question_id
+            question = example.request.questions[question_id]
+            measurement = backend.score(q_compiled)
+            reference = example.reference_answers[question_id]
+            w_id = example.workload_id
+            w_data = workload_data[w_id]
+            w_data["primitive"] = question.type
+            w_data["public_benchmark"] |= example.public_source is not None
+
+            if question.type == "boolean":
+                option_ids = ("false", "true")
+                w_data["option_ids"] = option_ids
+                target_idx = 1 if reference == "true" else 0
+                logits_vec = [measurement.decision.logits["false"], measurement.decision.logits["true"]]
+            elif question.type == "choice":
+                option_ids = tuple(opt.id for opt in question.options)
+                w_data["option_ids"] = option_ids
+                target_idx = option_ids.index(reference)
+                logits_vec = [measurement.decision.logits[opt_id] for opt_id in option_ids]
+            elif question.type == "score":
+                option_ids = tuple(lvl.id for lvl in question.levels)
+                w_data["option_ids"] = option_ids
+                w_data["option_values"] = tuple(lvl.value for lvl in question.levels)
+                target_idx = option_ids.index(reference)
+                logits_vec = [measurement.decision.logits[lvl_id] for lvl_id in option_ids]
+            else:
+                continue
+
+            w_data["logits_list"].append(logits_vec)
+            w_data["targets"].append(target_idx)
+            raw_probs = measurement.decision.probabilities
+            raw_pred = measurement.decision.selected_id
+            w_data["confidences_raw"].append(max(raw_probs.values()))
+            w_data["accuracies_raw"].append(1 if raw_pred == reference else 0)
+
+    output_dir = root / args.output
+    output_dir.mkdir(parents=True, exist_ok=True)
+    profiles_created = {}
+
+    for workload_id, w_data in workload_data.items():
+        primitive = w_data["primitive"]
+        option_ids = w_data["option_ids"]
+        logits_list = w_data["logits_list"]
+        targets = w_data["targets"]
+
+        # 1. Fit temperature scaling
+        fitted_t = fit_temperature_scaling(logits_list, targets)
+        fitted_t = round(max(0.1, min(10.0, fitted_t)), 4)
+
+        # 2. Compute calibrated probabilities
+        calibrated_probs_list = []
+        calibrated_confs = []
+        calibrated_accs = []
+        for logits, target in zip(logits_list, targets, strict=True):
+            max_z = max(logits)
+            exp_z = [math.exp((z - max_z) / fitted_t) for z in logits]
+            sum_exp = sum(exp_z)
+            p_vec = [v / sum_exp for v in exp_z]
+            calibrated_probs_list.append(p_vec)
+            pred_idx = max(range(len(p_vec)), key=lambda i: p_vec[i])
+            calibrated_confs.append(max(p_vec))
+            calibrated_accs.append(1 if pred_idx == target else 0)
+
+        # 3. Metrics on calibration split
+        ece, bins = compute_ece(calibrated_confs, calibrated_accs, num_bins=10, equal_count=True)
+        brier = compute_brier_score(calibrated_probs_list, targets)
+        prev_brier = compute_prevalence_brier(targets, len(option_ids))
+        nll = compute_nll(calibrated_probs_list, targets)
+
+        # 4. Acceptance policy
+        if workload_id == "support-routing-v1" or w_data["public_benchmark"]:
+            policy = AcceptancePolicy(type="review_only", threshold=0.90)
+        else:
+            fitted_thresh, _ = fit_acceptance_threshold(
+                calibrated_confs, calibrated_accs, target_error=0.05, min_coverage=0.50
+            )
+            policy = AcceptancePolicy(type="threshold", threshold=round(fitted_thresh, 4))
+
+        selective = compute_selective_metrics(
+            calibrated_confs,
+            calibrated_accs,
+            policy.threshold if policy.type != "review_only" else 1.01,
+        )
+
+        gate_ece = ece <= 0.05
+        gate_brier = brier <= prev_brier
+        gate_selective = (
+            selective["coverage"] >= 0.50 and selective["accepted_error_95_upper_bound"] <= 0.05
+        )
+        samples_sufficient = selective["accepted_count"] >= 59
+
+        metrics_record = CalibrationMetrics(
+            brier_score=round(brier, 6),
+            prevalence_brier_score=round(prev_brier, 6),
+            nll=round(nll, 6),
+            ece=round(ece, 6),
+            coverage=round(selective["coverage"], 4),
+            accepted_error_rate=round(selective["accepted_error_rate"], 4),
+            accepted_error_95_upper_bound=round(selective["accepted_error_95_upper_bound"], 4),
+            sample_count=len(targets),
+            accepted_count=selective["accepted_count"],
+            errors_in_accepted=selective["errors_in_accepted"],
+            gate_ece_passed=gate_ece,
+            gate_brier_passed=gate_brier,
+            gate_selective_passed=gate_selective,
+            samples_sufficient_for_gate=samples_sufficient,
+            reliability_bins=bins,
+        )
+
+        cardinality_range = (len(option_ids), len(option_ids)) if primitive == "boolean" else (2, 16)
+        profile = CalibrationProfile(
+            schema_version=1,
+            profile_id=workload_id,
+            workload_id=workload_id,
+            primitive=primitive,
+            artifact_id=model_config["artifact_id"],
+            model_id=model_config["model_id"],
+            revision=model_config["revision"],
+            precision=model_config["precision"],
+            prompt_version=model_config["prompt_version"],
+            label_version=model_config["label_version"],
+            cardinality_range=cardinality_range,
+            method="temperature_scaling",
+            temperature=fitted_t,
+            policy=policy,
+            dataset_sha256=manifest["dataset_sha256"],
+            split="calibration",
+            fitted_at=datetime.now(UTC).isoformat(),
+            metrics=metrics_record,
+        )
+
+        profile_file = output_dir / f"{workload_id}.yaml"
+        save_profile(profile, profile_file)
+        profiles_created[workload_id] = profile.model_dump(mode="json")
+
+    # If support-routing-v1 was not in calibration split, generate review_only profile
+    if (
+        "support-routing-v1" not in profiles_created
+        and any(e.workload_id == "support-routing-v1" for e in examples)
+    ):
+        sr_profile = CalibrationProfile(
+            schema_version=1,
+            profile_id="support-routing-v1",
+            workload_id="support-routing-v1",
+            primitive="choice",
+            artifact_id=model_config["artifact_id"],
+            model_id=model_config["model_id"],
+            revision=model_config["revision"],
+            precision=model_config["precision"],
+            prompt_version=model_config["prompt_version"],
+            label_version=model_config["label_version"],
+            cardinality_range=(2, 16),
+            method="temperature_scaling",
+            temperature=1.0,
+            policy=AcceptancePolicy(type="review_only", threshold=0.90),
+            dataset_sha256=manifest["dataset_sha256"],
+            split="calibration",
+            fitted_at=datetime.now(UTC).isoformat(),
+        )
+        save_profile(sr_profile, output_dir / "support-routing-v1.yaml")
+        profiles_created["support-routing-v1"] = sr_profile.model_dump(mode="json")
+
+    summary_path = root / args.summary
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    with summary_path.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(profiles_created, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    print(f"Calibration completed. Profiles saved to {output_dir}")
+    return 0
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=Path.cwd())
@@ -390,9 +730,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=("train", "development", "calibration", "locked_test", "task_holdout"),
         default="development",
     )
+    run.add_argument("--profiles-dir", default="configs/profiles")
+    run.add_argument("--use-workload-profiles", action="store_true", default=False)
     run.add_argument("--output", required=True)
     run.add_argument("--predictions", required=True)
     run.set_defaults(function=run_evaluation)
+
+    calibrate = subparsers.add_parser("calibrate")
+    calibrate.add_argument("--dataset", default="evals/data/m1-suite.jsonl")
+    calibrate.add_argument("--suite-config", default="configs/evals/m1-suite.yaml")
+    calibrate.add_argument("--split-seed", default="jah-m1-split-v1")
+    calibrate.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
+    calibrate.add_argument("--output", default="configs/profiles")
+    calibrate.add_argument("--summary", default="artifacts/m2/calibration-summary.json")
+    calibrate.set_defaults(function=run_calibration)
 
     compare = subparsers.add_parser("compare")
     compare.add_argument("--direct-report", required=True)

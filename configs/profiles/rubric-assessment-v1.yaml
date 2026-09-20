@@ -1,0 +1,74 @@
+schema_version: 1
+profile_id: rubric-assessment-v1
+workload_id: rubric-assessment-v1
+primitive: score
+artifact_id: qwen3.5-4b-m0
+model_id: Qwen/Qwen3.5-4B
+revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+precision: bfloat16
+prompt_version: decision-prompt-v2
+label_version: latin-uppercase-bare-v2
+cardinality_range:
+- 2
+- 16
+method: temperature_scaling
+temperature: 0.1
+policy:
+  type: threshold
+  threshold: 0.85
+  metric: max_probability
+dataset_sha256: f63098e4438a6bc621c85bf4f2b1d2363cd578b5d5970b8c42e7a1599a441808
+split: calibration
+fitted_at: '2026-09-20T03:06:12.277110+00:00'
+metrics:
+  brier_score: 0.000176
+  prevalence_brier_score: 0.444444
+  nll: 0.003874
+  ece: 0.00383
+  coverage: 1.0
+  accepted_error_rate: 0.0
+  accepted_error_95_upper_bound: 0.393
+  sample_count: 6
+  accepted_count: 6
+  errors_in_accepted: 0
+  gate_ece_passed: true
+  gate_brier_passed: true
+  gate_selective_passed: false
+  samples_sufficient_for_gate: false
+  reliability_bins:
+  - count: 1
+    mean_confidence: 0.9770226300896625
+    accuracy: 1.0
+    difference: 0.022977369910337497
+    min_confidence: 0.9770226300896625
+    max_confidence: 0.9770226300896625
+  - count: 1
+    mean_confidence: 0.9999999999861044
+    accuracy: 1.0
+    difference: 1.389555137620846e-11
+    min_confidence: 0.9999999999861044
+    max_confidence: 0.9999999999861044
+  - count: 1
+    mean_confidence: 1.0
+    accuracy: 1.0
+    difference: 0.0
+    min_confidence: 1.0
+    max_confidence: 1.0
+  - count: 1
+    mean_confidence: 1.0
+    accuracy: 1.0
+    difference: 0.0
+    min_confidence: 1.0
+    max_confidence: 1.0
+  - count: 1
+    mean_confidence: 1.0
+    accuracy: 1.0
+    difference: 0.0
+    min_confidence: 1.0
+    max_confidence: 1.0
+  - count: 1
+    mean_confidence: 1.0
+    accuracy: 1.0
+    difference: 0.0
+    min_confidence: 1.0
+    max_confidence: 1.0

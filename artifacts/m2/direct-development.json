@@ -1,0 +1,102 @@
+{
+  "artifact_id": "qwen3.5-4b-m0",
+  "backend": "direct",
+  "created_at": "2026-09-20T03:06:44.493413+00:00",
+  "dataset_sha256": "f63098e4438a6bc621c85bf4f2b1d2363cd578b5d5970b8c42e7a1599a441808",
+  "decisions": 22,
+  "evidence_sha256": "ce812a7ae39ac22e69691919a41a4c641e6476c440b0f5a3956236ee6f79082c",
+  "examples": 22,
+  "latency_ms": {
+    "median_request": 66.98114998289384,
+    "p95_request": 76.14119999925606
+  },
+  "metrics": {
+    "document-relevance-v1/boolean": {
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "calibration": {
+        "brier_score": 3.1525582278352596e-16,
+        "ece": 6.277497910378571e-09,
+        "gate_brier_passed": true,
+        "gate_ece_passed": true,
+        "gate_passed": true,
+        "nll": 6.2774979891925284e-09,
+        "prevalence_brier": 0.5
+      },
+      "decisions": 4,
+      "labels": [
+        "false",
+        "true"
+      ],
+      "macro_f1": 1.0,
+      "selective": {
+        "accepted_count": 4,
+        "accepted_error_95_upper_bound": 0.527129195498412,
+        "accepted_error_rate": 0.0,
+        "coverage": 1.0,
+        "gate_passed": false,
+        "review_count": 0,
+        "samples_sufficient_for_gate": false
+      }
+    },
+    "rubric-assessment-v1/score": {
+      "calibration": {
+        "brier_score": 0.00035353237088652905,
+        "ece": 0.007693653619372372,
+        "gate_brier_passed": true,
+        "gate_ece_passed": true,
+        "gate_passed": true,
+        "nll": 0.007783833390007551,
+        "prevalence_brier": 0.6666666666666669
+      },
+      "decisions": 6,
+      "normalized_mae": 0.0028755914057106056,
+      "quadratic_weighted_kappa": 1.0,
+      "selective": {
+        "accepted_count": 6,
+        "accepted_error_95_upper_bound": 0.39303776899708265,
+        "accepted_error_rate": 0.0,
+        "coverage": 1.0,
+        "gate_passed": false,
+        "review_count": 0,
+        "samples_sufficient_for_gate": false
+      }
+    },
+    "support-routing-v1/choice": {
+      "accuracy": 0.8333333333333334,
+      "balanced_accuracy": 0.41666666666666663,
+      "calibration": {
+        "brier_score": 0.1393955364401062,
+        "ece": 0.12972438832124072,
+        "gate_brier_passed": true,
+        "gate_ece_passed": false,
+        "gate_passed": false,
+        "nll": 0.2679765543826791,
+        "prevalence_brier": 0.5
+      },
+      "decisions": 12,
+      "labels": [
+        "account",
+        "billing",
+        "other",
+        "technical"
+      ],
+      "macro_f1": 0.45,
+      "selective": {
+        "accepted_count": 0,
+        "accepted_error_95_upper_bound": 1.0,
+        "accepted_error_rate": 0.0,
+        "coverage": 0.0,
+        "gate_passed": false,
+        "review_count": 12,
+        "samples_sufficient_for_gate": false
+      }
+    }
+  },
+  "model_config_sha256": "730c408b091d08a2cf5977419597757ddfadd0315a5dbf1c6b0ddf971ce692e4",
+  "predictions_sha256": "e43be595f576eadc6879549c96c352de047dad1885c7da6948bd1f2ba09aa938",
+  "schema_version": 1,
+  "source_commit_sha": "f8916902c6c415f42c9490ef8b41f84944aef206",
+  "split": "development",
+  "split_assignment_sha256": "2e8f420ab2a185ad00845ac25a8aede728e657003000ad8f1960f2fc9bc7571e"
+}

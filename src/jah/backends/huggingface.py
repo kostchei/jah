@@ -41,7 +41,9 @@ class HuggingFaceDirectLogitBackend:
         ).to(self.device)
         self.model.eval()
 
-    def score(self, question: CompiledQuestion) -> InferenceMeasurement:
+    def score(
+        self, question: CompiledQuestion, *, temperature: float = 1.0
+    ) -> InferenceMeasurement:
         torch = self.torch
         if question.label_token_ids is None:
             raise ValueError("compiled question is missing tokenizer-verified label token IDs")
@@ -65,6 +67,7 @@ class HuggingFaceDirectLogitBackend:
             final,
             option_ids=question.option_ids,
             label_token_ids=question.label_token_ids,
+            temperature=temperature,
             option_values=question.option_values,
         )
         label_mass = label_probability_mass(final, question.label_token_ids)

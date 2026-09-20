@@ -1,5 +1,6 @@
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 
 from jah.engine import DecisionEngine, EngineConfig
@@ -84,3 +85,54 @@ def test_backend_failure_is_503_and_never_returns_partial_answers() -> None:
         response = client.post("/v1/evaluate", json=request_body())
         assert response.status_code == 503
         assert response.json() == {"detail": "inference failed before the atomic response"}
+
+
+@pytest.mark.parametrize("evidence", ["validated", "missing", "failed", "insufficient"])
+def test_service_profile_acceptance_requires_evidence(validated_metrics, evidence) -> None:
+    from jah.calibration import CalibrationProfile
+    from jah.policy import AcceptancePolicy
+
+    profile = CalibrationProfile(
+        profile_id="relevance-v1",
+        workload_id="document-relevance-v1",
+        primitive="boolean",
+        artifact_id="test-artifact",
+        model_id="test-model",
+        revision="test-rev",
+        precision="bf16",
+        prompt_version="decision-prompt-v2",
+        label_version="latin-uppercase-bare-v2",
+        cardinality_range=(2, 2),
+        temperature=1.0,
+        policy=AcceptancePolicy(type="threshold", threshold=0.70),
+        metrics=(
+            None if evidence == "missing" else validated_metrics.model_copy(update={
+                "gate_selective_passed": evidence != "failed",
+                "samples_sufficient_for_gate": evidence != "insufficient",
+            })
+        ),
+    )
+    config = EngineConfig(
+        artifact_id="test-artifact",
+        profiles={"relevance-v1": profile},
+        model_metadata={
+            "model_id": "test-model",
+            "revision": "test-rev",
+            "precision": "bf16",
+            "prompt_version": "decision-prompt-v2",
+            "label_version": "latin-uppercase-bare-v2",
+        },
+    )
+    engine = DecisionEngine(FakeBackend(), config)
+    with TestClient(create_app(engine=engine)) as client:
+        payload = {
+            **request_body(),
+            "profile": "relevance-v1",
+        }
+        response = client.post("/v1/evaluate", json=payload)
+        assert response.status_code == 200
+        answer = response.json()["answers"]["check"]
+        assert answer["calibration_status"] == (
+            "validated" if evidence == "validated" else "uncalibrated"
+        )
+        assert answer["disposition"] == ("accept" if evidence == "validated" else "review")

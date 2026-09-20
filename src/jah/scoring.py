@@ -10,6 +10,7 @@ class ScoredDecision:
     selected_id: str
     probabilities: dict[str, float]
     expected_value: float | None = None
+    logits: dict[str, float] | None = None
 
 
 def last_unpadded_logits(logits, attention_mask):
@@ -49,6 +50,8 @@ def score_option_logits(
     probabilities_tensor = torch.softmax(selected_logits / temperature, dim=-1)
     probabilities_list = probabilities_tensor.detach().cpu().tolist()
     probabilities = dict(zip(option_ids, probabilities_list, strict=True))
+    logits_list = selected_logits.detach().cpu().tolist()
+    logits_dict = dict(zip(option_ids, logits_list, strict=True))
     selected_index = int(torch.argmax(probabilities_tensor).item())
     expected_value = None
     if option_values is not None:
@@ -60,6 +63,48 @@ def score_option_logits(
         selected_id=option_ids[selected_index],
         probabilities=probabilities,
         expected_value=expected_value,
+        logits=logits_dict,
+    )
+
+
+def rescale_logits(
+    logits: dict[str, float],
+    temperature: float,
+    *,
+    option_values: tuple[float, ...] | None = None,
+) -> ScoredDecision:
+    """Compute temperature-scaled FP32 probabilities from unnormalized logits."""
+    import math
+
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    if not logits:
+        raise ValueError("logits cannot be empty")
+
+    max_logit = max(logits.values())
+    exp_logits = {k: math.exp((v - max_logit) / temperature) for k, v in logits.items()}
+    total_exp = sum(exp_logits.values())
+    probabilities = {k: v / total_exp for k, v in exp_logits.items()}
+
+    # Guarantee probabilities sum to 1.0 within 1e-5
+    sum_prob = sum(probabilities.values())
+    if not math.isclose(sum_prob, 1.0, abs_tol=1e-5):
+        probabilities = {k: v / sum_prob for k, v in probabilities.items()}
+
+    selected_id = max(probabilities, key=lambda k: (probabilities[k], k))
+    expected_value = None
+    if option_values is not None:
+        if len(option_values) != len(logits):
+            raise ValueError("option values and logits must have equal length")
+        expected_value = sum(
+            probabilities[option_id] * value
+            for option_id, value in zip(logits.keys(), option_values, strict=True)
+        )
+    return ScoredDecision(
+        selected_id=selected_id,
+        probabilities=probabilities,
+        expected_value=expected_value,
+        logits=logits,
     )
 
 

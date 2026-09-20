@@ -1,0 +1,93 @@
+{
+  "all_provisional_gates_passed": false,
+  "artifact_id": "qwen3.5-4b-m0",
+  "created_at": "2026-09-20T03:07:17.128258+00:00",
+  "dataset_sha256": "f63098e4438a6bc621c85bf4f2b1d2363cd578b5d5970b8c42e7a1599a441808",
+  "evidence_sha256": "6669c5475cc6ae23a9e501f474394e5e35a3f2dd59d22ca7dd9d64c2095d3170",
+  "latency": {
+    "direct_median_request_ms": 66.98114998289384,
+    "direct_p95_request_ms": 76.14119999925606,
+    "gate_passed": false,
+    "generative_median_request_ms": 76.9721499964362,
+    "generative_over_direct_speedup": 1.1491613687745572
+  },
+  "metrics": {
+    "document-relevance-v1/boolean": {
+      "calibration": {
+        "brier_score": 3.1525582278352596e-16,
+        "ece": 6.277497910378571e-09,
+        "gate_brier_passed": true,
+        "gate_ece_passed": true,
+        "gate_passed": true,
+        "nll": 6.2774979891925284e-09,
+        "prevalence_brier": 0.5
+      },
+      "direct_macro_f1": 1.0,
+      "direct_minus_generative": 0.0,
+      "gate_passed": true,
+      "generative_macro_f1": 1.0,
+      "selective": {
+        "accepted_count": 4,
+        "accepted_error_95_upper_bound": 0.527129195498412,
+        "accepted_error_rate": 0.0,
+        "coverage": 1.0,
+        "gate_passed": false,
+        "review_count": 0,
+        "samples_sufficient_for_gate": false
+      }
+    },
+    "rubric-assessment-v1/score": {
+      "calibration": {
+        "brier_score": 0.00035353237088652905,
+        "ece": 0.007693653619372372,
+        "gate_brier_passed": true,
+        "gate_ece_passed": true,
+        "gate_passed": true,
+        "nll": 0.007783833390007551,
+        "prevalence_brier": 0.6666666666666669
+      },
+      "direct_normalized_mae": 0.0028755914057106056,
+      "gate_passed": true,
+      "generative_normalized_mae": 0.0,
+      "selective": {
+        "accepted_count": 6,
+        "accepted_error_95_upper_bound": 0.39303776899708265,
+        "accepted_error_rate": 0.0,
+        "coverage": 1.0,
+        "gate_passed": false,
+        "review_count": 0,
+        "samples_sufficient_for_gate": false
+      }
+    },
+    "support-routing-v1/choice": {
+      "calibration": {
+        "brier_score": 0.1393955364401062,
+        "ece": 0.12972438832124072,
+        "gate_brier_passed": true,
+        "gate_ece_passed": false,
+        "gate_passed": false,
+        "nll": 0.2679765543826791,
+        "prevalence_brier": 0.5
+      },
+      "direct_macro_f1": 0.45,
+      "direct_minus_generative": 0.0,
+      "gate_passed": false,
+      "generative_macro_f1": 0.45,
+      "selective": {
+        "accepted_count": 0,
+        "accepted_error_95_upper_bound": 1.0,
+        "accepted_error_rate": 0.0,
+        "coverage": 0.0,
+        "gate_passed": false,
+        "review_count": 12,
+        "samples_sufficient_for_gate": false
+      }
+    }
+  },
+  "paired_decisions": 22,
+  "prediction_disagreements": 0,
+  "schema_version": 1,
+  "source_commit_sha": "f8916902c6c415f42c9490ef8b41f84944aef206",
+  "split": "development",
+  "split_assignment_sha256": "2e8f420ab2a185ad00845ac25a8aede728e657003000ad8f1960f2fc9bc7571e"
+}
