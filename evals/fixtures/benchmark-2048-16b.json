@@ -1,0 +1,86 @@
+{
+  "state": "INCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction-pipeline\nDescription: High HTTP 504 gateway timeout rate observed following canary deployment 4.18.2.\nRoot Cause: Database connection pool exhaustion caused by misconfigured keepalive idle timeout.\nAction Taken: Traffic shifted back to stable deployment 4.18.1; connection pool max_size doubled to 256.\nImpact: 1,420 checkout requests failed between 08:02Z and 08:14Z. No data corruption detected.\nFollow-up: Audit all service keepalive defaults and implement circuit breaker backpressure.\nTelemetry snapshot: CPU utilization peaked at 78.4%, memory steady at 14.2 GB of 32 GB allocatable.\nNetwork egress rate: 420 Mbps peak, packet drop rate 0.002% on eth0.\n\nINCIDENT REPORT - CLUSTER US-EAST-4B\nTimestamp: 2026-09-20T08:14:22Z | Severity: SEV-2 | Status: MITIGATED\nComponent: ingress-controller-envoy-v2 | Service: billing-transaction",
+  "questions": {
+    "q_00": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The incident severity was SEV-2."
+    },
+    "q_01": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The affected cluster was US-WEST-2A."
+    },
+    "q_02": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The canary deployment version was 4.18.2."
+    },
+    "q_03": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "Traffic was shifted back to stable deployment 4.18.1."
+    },
+    "q_04": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "Database connection pool exhaustion caused the timeouts."
+    },
+    "q_05": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "Over 5,000 checkout requests failed during the incident."
+    },
+    "q_06": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "No data corruption was detected during the incident."
+    },
+    "q_07": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The incident status is currently OPEN and unmitigated."
+    },
+    "q_08": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "Memory utilization exceeded 95% of allocatable capacity."
+    },
+    "q_09": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "CPU utilization peaked at 78.4%."
+    },
+    "q_10": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The connection pool max_size was increased to 256."
+    },
+    "q_11": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "Packet drop rate exceeded 10% on interface eth0."
+    },
+    "q_12": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The incident occurred on September 20, 2026."
+    },
+    "q_13": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The follow-up action includes auditing service keepalive defaults."
+    },
+    "q_14": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "The service affected was the billing-transaction-pipeline."
+    },
+    "q_15": {
+      "instructions": "Determine whether the proposition is supported by the incident log.",
+      "type": "boolean",
+      "proposition": "Network egress rate reached 10 Gbps peak."
+    }
+  },
+  "profile": "support-routing-v1"
+}

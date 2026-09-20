@@ -61,6 +61,27 @@ def test_adjudication_requires_two_independent_humans() -> None:
         M1Example.model_validate(payload)
 
 
+def test_model_adjudicated_allows_single_model_annotation() -> None:
+    payload = example_payload()
+    payload["annotation_status"] = "model-adjudicated"
+    payload["annotations"] = [
+        {
+            "annotator_id": "qwen-27b",
+            "annotator_kind": "model",
+            "answers": payload["reference_answers"],
+            "independent": True,
+        }
+    ]
+    example = M1Example.model_validate(payload)
+    assert example.annotation_status == "model-adjudicated"
+    assert len(example.annotations) == 1
+
+    # But missing annotations raises
+    payload["annotations"] = []
+    with pytest.raises(ValidationError, match="at least one annotation"):
+        M1Example.model_validate(payload)
+
+
 def test_suite_gate_reports_missing_size_and_primitives() -> None:
     status = validate_m1_suite([M1Example.model_validate(example_payload())])
     assert status["ready"] is False

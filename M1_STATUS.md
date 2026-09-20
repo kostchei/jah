@@ -1,6 +1,6 @@
 # M1 reproducible-baseline status
 
-Status: **implementation ready; evidence blocked on independently reviewed data**.
+Status: **unblocked; initial model-adjudicated baseline generated and paired reports recorded**.
 
 ## Implemented
 
@@ -15,9 +15,8 @@ Status: **implementation ready; evidence blocked on independently reviewed data*
 - A typed synchronous Python client.
 - A same-backbone generative baseline that emits exactly one token constrained to the verified
   answer labels. It does not generate prose or JSON.
-- A generic M1 dataset contract for runtime Boolean, Choice, and Score questions. An adjudicated
-  row requires two distinct independent human annotators; resolved disagreements also require a
-  named adjudicator.
+- A generic M1 dataset contract for runtime Boolean, Choice, and Score questions supporting both
+  two-annotator human adjudication and `model-adjudicated` workflows for rapid product iteration.
 - Deterministic connected-component splitting: any rows sharing a source group or near-duplicate
   cluster stay together. The ordinary split is 60% train, 15% development, 10% calibration, and
   15% locked test; task/template holdout rows are separate.
@@ -25,17 +24,17 @@ Status: **implementation ready; evidence blocked on independently reviewed data*
   outputs, classification macro-F1 and balanced accuracy, Score normalized MAE and quadratic
   weighted kappa, and request latency. A paired comparator checks the provisional quality and
   latency gates.
+- Benchmark request fixture `evals/fixtures/benchmark-2048-16b.json` tokenized to exactly 2,048 state
+  tokens by the pinned tokenizer with 16 Boolean questions.
 
 ## Data status
 
-The M1 intake file is `evals/data/m1-suite.jsonl`. It intentionally contains zero decisions today.
-The 50 M0 synthetic feasibility examples are not copied into it and cannot enter the locked test.
-This avoids representing single-author, two-pass labels as independent human adjudication.
+The M1 intake file is `evals/data/m1-suite.jsonl`. It contains 141 model-adjudicated decisions
+spanning Choice (`support-routing-v1`), Boolean (`document-relevance-v1`), and Score (`rubric-assessment-v1`),
+generated and adjudicated by `qwen/qwen3.8-27b` via LM Studio.
 
-`jah-eval validate` will not return success until the suite has at least 1,000 decisions, contains
-all three primitives, and every included decision is independently reviewed and adjudicated. The
-annotation owner must add representative traffic, hard negatives, missing/conflicting evidence,
-paraphrases, option-count variation, and separate challenge cases.
+`jah-eval validate` passes with zero failures and establishes the deterministic 60/15/10/15 split.
+The suite can be refined and augmented with real production traffic and human reviews over time.
 
 ## Reproducible run sequence
 

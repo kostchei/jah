@@ -1,0 +1,28 @@
+{
+  "artifact_id": "qwen3.5-4b-m0",
+  "created_at": "2026-09-20T02:44:39.997964+00:00",
+  "environment": {
+    "base_url": "http://127.0.0.1:8000",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.9"
+  },
+  "evidence_sha256": "e57e758aafebc9039502403dc46eba4b75d9eb7b1e2d78a0e1becb8fc665e64f",
+  "failures": [],
+  "latency_ms": {
+    "client_median": 5574.1586000076495,
+    "client_p95": 5784.246600000188,
+    "server_median": 5572.7463500224985,
+    "server_p95": 5782.732799998485
+  },
+  "p95_two_second_gate_passed": false,
+  "protocol": {
+    "concurrency": 1,
+    "measured_requests": 10,
+    "primitive": "boolean",
+    "questions_per_request": 16,
+    "state_tokens": 2048,
+    "warmup_requests": 5
+  },
+  "request_sha256": "0ef1cd8af5f3c63f3bd6693549a0ba7cccf0b1d8370246bb9144e4a9d7097661",
+  "schema_version": 1
+}

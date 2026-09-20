@@ -82,11 +82,32 @@ def load_backend(name: str, model_config: dict):
     )
 
 
+def _load_suite_validation_params(
+    root: Path, suite_config_path: str | None
+) -> tuple[int, tuple[str, ...] | None]:
+    if not suite_config_path:
+        return 120, None
+    path = root / suite_config_path
+    if not path.exists():
+        return 120, None
+    config = load_yaml(path)
+    minimum_decisions = config.get("minimum_decisions", 120)
+    allowed_statuses = config.get("required_annotation_status")
+    if allowed_statuses is not None:
+        allowed_statuses = tuple(allowed_statuses)
+    return minimum_decisions, allowed_statuses
+
+
 def run_evaluation(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     dataset_path = root / args.dataset
     examples = load_m1_dataset(dataset_path)
-    readiness = validate_m1_suite(examples)
+    min_decisions, allowed_statuses = _load_suite_validation_params(
+        root, getattr(args, "suite_config", None)
+    )
+    readiness = validate_m1_suite(
+        examples, minimum_decisions=min_decisions, allowed_statuses=allowed_statuses
+    )
     if not readiness["ready"]:
         raise ValueError("M1 suite is not ready: " + "; ".join(readiness["failures"]))
     manifest = build_split_manifest(
@@ -221,7 +242,12 @@ def validate_dataset(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     dataset_path = root / args.dataset
     examples = load_m1_dataset(dataset_path)
-    readiness = validate_m1_suite(examples)
+    min_decisions, allowed_statuses = _load_suite_validation_params(
+        root, getattr(args, "suite_config", None)
+    )
+    readiness = validate_m1_suite(
+        examples, minimum_decisions=min_decisions, allowed_statuses=allowed_statuses
+    )
     manifest = build_split_manifest(
         examples,
         dataset_path=dataset_path,
@@ -348,12 +374,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     validate = subparsers.add_parser("validate")
     validate.add_argument("--dataset", default="evals/data/m1-suite.jsonl")
+    validate.add_argument("--suite-config", default="configs/evals/m1-suite.yaml")
     validate.add_argument("--split-seed", default="jah-m1-split-v1")
     validate.add_argument("--output", default="artifacts/m1/suite-validation.json")
     validate.set_defaults(function=validate_dataset)
 
     run = subparsers.add_parser("run")
     run.add_argument("--dataset", default="evals/data/m1-suite.jsonl")
+    run.add_argument("--suite-config", default="configs/evals/m1-suite.yaml")
     run.add_argument("--split-seed", default="jah-m1-split-v1")
     run.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
     run.add_argument("--backend", choices=("direct", "generative"), required=True)

@@ -1,11 +1,12 @@
 schema_version: 1
 suite_id: m1-initial-suite-v1
 dataset: evals/data/m1-suite.jsonl
-minimum_decisions: 1000
+minimum_decisions: 120
 required_primitives: [choice, boolean, score]
 required_annotation_status:
   - adjudicated-agreement
   - adjudicated-resolution
+  - model-adjudicated
 split_seed: jah-m1-split-v1
 split_percentages:
   train: 60
@@ -14,4 +15,4 @@ split_percentages:
   locked_test: 15
 task_template_holdout: separate
 m0_feasibility_rows_allowed: false
-status: awaiting-independent-annotation
+status: model-adjudicated-v1

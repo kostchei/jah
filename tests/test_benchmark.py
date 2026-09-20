@@ -39,3 +39,13 @@ def test_latency_protocol_requires_exact_question_count() -> None:
     )
     with pytest.raises(ValueError, match="requires 16"):
         validate_benchmark_shape(request, expected_questions=16)
+
+
+def test_benchmark_fixture_file_has_valid_shape() -> None:
+    from pathlib import Path
+
+    fixture_path = Path("evals/fixtures/benchmark-2048-16b.json")
+    assert fixture_path.exists(), "Benchmark fixture file does not exist"
+    request = EvaluateRequest.model_validate_json(fixture_path.read_text(encoding="utf-8"))
+    validate_benchmark_shape(request, expected_questions=16)
+    assert len(request.questions) == 16

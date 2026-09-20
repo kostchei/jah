@@ -1,0 +1,48 @@
+{
+  "artifact_id": "qwen3.5-4b-m0",
+  "backend": "generative",
+  "created_at": "2026-09-20T02:34:42.037842+00:00",
+  "dataset_sha256": "f63098e4438a6bc621c85bf4f2b1d2363cd578b5d5970b8c42e7a1599a441808",
+  "decisions": 22,
+  "evidence_sha256": "5871e30be654b913635e77d3c2f3451043a32724cfa0d50782c0f21e0095b172",
+  "examples": 22,
+  "latency_ms": {
+    "median_request": 90.27730001253076,
+    "p95_request": 2461.3605000195093
+  },
+  "metrics": {
+    "document-relevance-v1/boolean": {
+      "accuracy": 1.0,
+      "balanced_accuracy": 1.0,
+      "decisions": 4,
+      "labels": [
+        "false",
+        "true"
+      ],
+      "macro_f1": 1.0
+    },
+    "rubric-assessment-v1/score": {
+      "decisions": 6,
+      "normalized_mae": 0.0,
+      "quadratic_weighted_kappa": 1.0
+    },
+    "support-routing-v1/choice": {
+      "accuracy": 0.8333333333333334,
+      "balanced_accuracy": 0.41666666666666663,
+      "decisions": 12,
+      "labels": [
+        "account",
+        "billing",
+        "other",
+        "technical"
+      ],
+      "macro_f1": 0.45
+    }
+  },
+  "model_config_sha256": "730c408b091d08a2cf5977419597757ddfadd0315a5dbf1c6b0ddf971ce692e4",
+  "predictions_sha256": "c624608cfa58bb2edf5ab4daa7ba7b2e77ebf132951e4a02f4fc1c6477f9dc14",
+  "schema_version": 1,
+  "source_commit_sha": "8053eea232dbf030c53cc92bff5052cdeb609957",
+  "split": "development",
+  "split_assignment_sha256": "2e8f420ab2a185ad00845ac25a8aede728e657003000ad8f1960f2fc9bc7571e"
+}

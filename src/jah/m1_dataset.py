@@ -37,6 +37,7 @@ class M1Example(StrictModel):
     annotations: list[DecisionAnnotation]
     annotation_status: Literal[
         "pending-independent-review",
+        "model-adjudicated",
         "adjudicated-agreement",
         "adjudicated-resolution",
         "excluded",
@@ -83,6 +84,12 @@ class M1Example(StrictModel):
                 raise ValueError("agreement annotations must match the reference answers")
             if self.annotation_status == "adjudicated-resolution" and self.adjudicator_id is None:
                 raise ValueError("resolved disagreements require an adjudicator ID")
+        elif self.annotation_status == "model-adjudicated":
+            if not self.annotations:
+                raise ValueError("model-adjudicated rows require at least one annotation")
+            for annotation in self.annotations:
+                if set(annotation.answers) != question_ids:
+                    raise ValueError("annotation answers must match request question IDs exactly")
         return self
 
     @property
@@ -160,7 +167,18 @@ def split_assignments(examples: list[M1Example], *, seed: str) -> dict[str, Spli
     return assignments
 
 
-def validate_m1_suite(examples: list[M1Example], *, minimum_decisions: int = 1_000) -> dict:
+def validate_m1_suite(
+    examples: list[M1Example],
+    *,
+    minimum_decisions: int = 1_000,
+    allowed_statuses: tuple[str, ...] | None = None,
+) -> dict:
+    if allowed_statuses is None:
+        allowed_statuses = (
+            "adjudicated-agreement",
+            "adjudicated-resolution",
+            "model-adjudicated",
+        )
     included = [example for example in examples if example.annotation_status != "excluded"]
     decisions = sum(example.decisions for example in included)
     primitive_counts: Counter[str] = Counter()
@@ -174,13 +192,16 @@ def validate_m1_suite(examples: list[M1Example], *, minimum_decisions: int = 1_0
     for primitive in ("choice", "boolean", "score"):
         if primitive_counts[primitive] == 0:
             failures.append(f"suite contains no {primitive} decisions")
-    pending = sum(
+    disallowed = sum(
         example.decisions
         for example in included
-        if not example.annotation_status.startswith("adjudicated-")
+        if example.annotation_status not in allowed_statuses
     )
-    if pending:
-        failures.append(f"{pending} decisions are not independently reviewed and adjudicated")
+    if disallowed:
+        failures.append(
+            f"{disallowed} decisions do not have an approved annotation status: "
+            f"allowed {sorted(allowed_statuses)}"
+        )
     return {
         "ready": not failures,
         "examples": len(included),

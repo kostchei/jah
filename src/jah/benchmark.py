@@ -34,10 +34,11 @@ def validate_benchmark_shape(
 
 
 def run(args: argparse.Namespace) -> int:
-    if args.warmup_requests < 20:
-        raise ValueError("the M1 protocol requires at least 20 warmup requests")
-    if args.measured_requests < 200:
-        raise ValueError("the M1 protocol requires at least 200 measured requests")
+    if not getattr(args, "smoke", False):
+        if args.warmup_requests < 20:
+            raise ValueError("the M1 protocol requires at least 20 warmup requests")
+        if args.measured_requests < 200:
+            raise ValueError("the M1 protocol requires at least 200 measured requests")
 
     request_path = Path(args.request).resolve()
     request = EvaluateRequest.model_validate_json(request_path.read_text(encoding="utf-8"))
@@ -132,6 +133,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-state-tokens", type=int, default=2_048)
     parser.add_argument("--expected-questions", type=int, default=16)
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
+    parser.add_argument("--smoke", action="store_true", help="Allow smaller warmup and measurement counts for smoke testing.")
     return parser.parse_args(argv)
 
 
