@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "suite_id": "public-human-benchmark-v1",
+  "split_seed": "jah-public-v1",
+  "purpose": "Public benchmark only; not production approval or independent local adjudication.",
+  "files": {
+    "banking-train.csv": {
+      "url": "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/57ec275d8078af65b7731c2a98be812d844a6d6b/banking_data/train.csv",
+      "sha256": "b06e26ac675513959a63135f11b94ea7786ed02da65db93a5650d8838cbc664b"
+    },
+    "banking-test.csv": {
+      "url": "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/57ec275d8078af65b7731c2a98be812d844a6d6b/banking_data/test.csv",
+      "sha256": "d12d6e3bc4c3103966ae786dc435913c0c563dfa328f5a3646d0e62cfeeb474d"
+    },
+    "banking-license.txt": {
+      "url": "https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/57ec275d8078af65b7731c2a98be812d844a6d6b/LICENSE",
+      "sha256": "7e7170e3cebf88a9f60c7b8421418323c09304da1af4d5e90f4da1dc1c8a2661"
+    },
+    "asap-train.zip": {
+      "url": "https://raw.githubusercontent.com/scrosseye/ASAP_2.0/060ab225ca0984c0bf43ff222bf6bb2bc6195b6f/ASAP_2_Final_github_train.zip",
+      "sha256": "aec01e98eb16cc3bc3828010ca053a09daecc2821dd2105f8a7333089271beb4"
+    },
+    "asap-sources.zip": {
+      "url": "https://raw.githubusercontent.com/scrosseye/ASAP_2.0/060ab225ca0984c0bf43ff222bf6bb2bc6195b6f/ASAP_2_source_texts.zip",
+      "sha256": "8655d7df4f78871cba6b8afc83a6a9df796be89f86d93c54f10dd61dd1d65d71"
+    },
+    "asap-rubric.docx": {
+      "url": "https://raw.githubusercontent.com/scrosseye/ASAP_2.0/060ab225ca0984c0bf43ff222bf6bb2bc6195b6f/asap_scoring_rubric.docx",
+      "sha256": "578edb71fd66c5f51e99b8d8bc24b038fcf819d91ad896d118b3736711c46403"
+    },
+    "asap-readme.md": {
+      "url": "https://raw.githubusercontent.com/scrosseye/ASAP_2.0/060ab225ca0984c0bf43ff222bf6bb2bc6195b6f/README.md",
+      "sha256": "9cd8c75bb2424050509899ff9c4e90950a50296396cdd1e5e2af13dab2f03ac1"
+    },
+    "wikiqa.zip": {
+      "url": "https://download.microsoft.com/download/e/5/f/e5fcfcee-7005-4814-853d-daa7c66507e0/WikiQACorpus.zip",
+      "sha256": "467c13f9e104552c0a9c16f41836ca8d89f9c0cc4b6e4355e104d5c3109ffa45"
+    }
+  },
+  "sources": {
+    "banking": {
+      "dataset": "banking77",
+      "revision": "57ec275d8078af65b7731c2a98be812d844a6d6b",
+      "license": "CC-BY-4.0",
+      "source_url": "https://github.com/PolyAI-LDN/task-specific-datasets",
+      "annotation_documentation": "https://arxiv.org/abs/2003.04807",
+      "attribution": "Casanueva et al. (2020), Efficient Intent Detection with Dual Sentence Encoders.",
+      "limitations": "A 16-intent closed-set subset, not the original 77-way benchmark or our support teams. Individual rater identities are not supplied."
+    },
+    "asap": {
+      "dataset": "asap2",
+      "revision": "060ab225ca0984c0bf43ff222bf6bb2bc6195b6f",
+      "license": "CC-BY-4.0",
+      "source_url": "https://github.com/scrosseye/ASAP_2.0",
+      "annotation_documentation": "https://doi.org/10.1016/j.asw.2025.100954",
+      "attribution": "Crossley et al. (2025), A large-scale corpus for assessing source-based writing quality: ASAP 2.0.",
+      "limitations": "Only upstream training essays for Car-free cities and Does the electoral college work? Source PDFs for five other prompts require OCR and are excluded. Original upstream test archive is not imported. Local held-out split is from upstream train. Per-rater records are not present. Demographics are omitted from input."
+    },
+    "wikiqa": {
+      "dataset": "wikiqa",
+      "revision": "1.0-2015-08-25",
+      "license": "Microsoft-Research-Data-License-WikiQA",
+      "source_url": "https://www.microsoft.com/en-us/download/details.aspx?id=52419",
+      "annotation_documentation": "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/YangYihMeek_EMNLP-15_WikiQA.pdf",
+      "attribution": "Yang, Yih and Meek (2015), WikiQA: A Challenge Dataset for Open-Domain Question Answering.",
+      "limitations": "Research and technology development only. Direct use of data in a commercial product requires Microsoft permission. Redistributed derivatives retain original terms and modification notices. No individual annotation records are invented; original crowd judgments are retained."
+    }
+  },
+  "banking_intents": [
+    "activate_my_card",
+    "age_limit",
+    "apple_pay_or_google_pay",
+    "atm_support",
+    "automatic_top_up",
+    "balance_not_updated_after_bank_transfer",
+    "balance_not_updated_after_cheque_or_cash_deposit",
+    "beneficiary_not_allowed",
+    "cancel_transfer",
+    "card_about_to_expire",
+    "card_acceptance",
+    "card_arrival",
+    "card_delivery_estimate",
+    "card_linking",
+    "card_not_working",
+    "card_payment_fee_charged"
+  ],
+  "asap_prompts": {
+    "Car-free cities": "ASAP2_source-texts/FL2_car-free_cities.pdf",
+    "Does the electoral college work?": "ASAP2_source-texts/FL1_does_the_electoral_college_work.pdf"
+  }
+}

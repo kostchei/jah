@@ -23,6 +23,20 @@ class DecisionAnnotation(StrictModel):
     independent: bool = False
 
 
+class PublicSource(StrictModel):
+    """Upstream labels are evidence, not invented local annotator records."""
+
+    dataset: Identifier
+    revision: str
+    file_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+    source_url: str
+    license: str
+    annotation_documentation: str
+    upstream_id: str
+    upstream_split: Literal["train", "dev", "test"]
+    original_label: str
+
+
 class M1Example(StrictModel):
     example_id: Identifier
     source_group_id: Identifier
@@ -38,15 +52,29 @@ class M1Example(StrictModel):
     annotation_status: Literal[
         "pending-independent-review",
         "model-adjudicated",
+        "upstream-human",
         "adjudicated-agreement",
         "adjudicated-resolution",
         "excluded",
     ]
     adjudicator_id: Identifier | None = None
     task_template_holdout: bool = False
+    public_source: PublicSource | None = None
+    evaluation_split: SplitName | None = None
 
     @model_validator(mode="after")
     def valid_references_and_review(self) -> M1Example:
+        if self.annotation_status == "upstream-human":
+            if self.public_source is None or self.provenance.kind != "public-benchmark":
+                raise ValueError("upstream-human rows require public source provenance")
+            if self.annotations:
+                raise ValueError("upstream-human rows must not fabricate individual annotations")
+        if self.public_source is not None:
+            expected = {"dev": "development", "test": "locked_test"}.get(
+                self.public_source.upstream_split
+            )
+            if expected is not None and self.evaluation_split != expected:
+                raise ValueError("upstream dev/test boundaries must be preserved")
         question_ids = set(self.request.questions)
         if set(self.reference_answers) != question_ids:
             raise ValueError("reference answers must match request question IDs exactly")
@@ -125,8 +153,8 @@ def _ordinary_split(identity: str, *, seed: str) -> SplitName:
     return "locked_test"
 
 
-def split_assignments(examples: list[M1Example], *, seed: str) -> dict[str, SplitName]:
-    """Keep every source and near-duplicate connected component in one split."""
+def source_components(examples: list[M1Example]) -> list[list[M1Example]]:
+    """Connected components shared by import quarantine and evaluation splitting."""
     parent: dict[str, str] = {}
 
     def find(node: str) -> str:
@@ -148,13 +176,32 @@ def split_assignments(examples: list[M1Example], *, seed: str) -> dict[str, Spli
         root = find(f"source:{example.source_group_id}")
         components.setdefault(root, []).append(example)
 
+    return list(components.values())
+
+
+def split_assignments(examples: list[M1Example], *, seed: str) -> dict[str, SplitName]:
+    """Keep every source and near-duplicate connected component in one split."""
     assignments: dict[str, SplitName] = {}
-    for component in components.values():
+    for component in source_components(examples):
+        explicit = {item.evaluation_split for item in component}
+        if len(explicit) != 1:
+            raise ValueError("a source/duplicate component crosses explicit split boundaries")
+        upstream = {
+            item.public_source.upstream_split for item in component
+            if item.public_source is not None
+        }
+        if len(upstream) > 1:
+            raise ValueError("a source/duplicate component crosses upstream split boundaries")
         holdout_values = {example.task_template_holdout for example in component}
         if len(holdout_values) != 1:
             raise ValueError("a connected source/cluster component mixes holdout and ordinary rows")
-        if True in holdout_values:
-            split: SplitName = "task_holdout"
+        fixed = explicit.pop()
+        if fixed is not None:
+            if True in holdout_values and fixed != "task_holdout":
+                raise ValueError("explicit split conflicts with task holdout")
+            split: SplitName = fixed
+        elif True in holdout_values:
+            split = "task_holdout"
         else:
             component_identity = "\0".join(
                 sorted(
@@ -204,6 +251,10 @@ def validate_m1_suite(
         )
     return {
         "ready": not failures,
+        "release_annotation_ready": decisions >= 1_000 and all(
+            example.annotation_status in {"adjudicated-agreement", "adjudicated-resolution"}
+            for example in included
+        ),
         "examples": len(included),
         "decisions": decisions,
         "primitive_counts": dict(sorted(primitive_counts.items())),
@@ -240,6 +291,7 @@ def build_split_manifest(
         "dataset_sha256": sha256_file(dataset_path),
         "split_seed": seed,
         "split_policy": {
+            "explicit_and_upstream_boundaries_preserved": True,
             "group_keys": ["source_group_id", "near_duplicate_cluster_id"],
             "percentages": {
                 "train": 60,

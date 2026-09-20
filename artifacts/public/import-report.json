@@ -1,0 +1,212 @@
+{
+  "assignment_sha256": "e234623899fdbd8cc7aa95b263e418330c9333944934b8e14a4ea5b9039724d7",
+  "dataset_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed",
+  "deduplication": "NFKC/casefold word normalization; exact or 5-word Jaccard >=0.90",
+  "excluded_by_adapter": {
+    "asap": {
+      "prompt_source_requires_ocr": 13302
+    },
+    "banking": {
+      "outside_frozen_16_intents": 10278
+    },
+    "wikiqa": {}
+  },
+  "limitations": [
+    "Public benchmarks may occur in model pretraining; contamination is unknown.",
+    "Upstream human labels do not establish local independent adjudication.",
+    "Near-duplicate detection does not detect all semantic paraphrases.",
+    "Sources can contain correlated decisions; binomial independence is not established.",
+    "ASAP includes two prompts only; no task/template holdout is claimed.",
+    "Token budgets have not been checked by import; evaluation rejects overlong inputs."
+  ],
+  "quarantined_count": 2880,
+  "quarantined_ids_sha256": "22405cb852735e454af605dcf61cec72e82f0f291f1569bcf0b71bfb6c27275e",
+  "readiness": {
+    "annotation_status_counts": {
+      "upstream-human": 33126
+    },
+    "decisions": 33126,
+    "examples": 33126,
+    "failures": [],
+    "primitive_counts": {
+      "boolean": 26328,
+      "choice": 2793,
+      "score": 4005
+    },
+    "ready": true,
+    "release_annotation_ready": false
+  },
+  "release_approved": false,
+  "schema_version": 1,
+  "source_config_sha256": "abe73d6ca0f527fbee57018c434d95d2b061dba1df5a7cc3e86b0563415601a5",
+  "source_grouping": {
+    "asap": "essay ID plus duplicate cluster; shared prompt context is not an essay",
+    "banking": "query row; original customer identifiers are not provided",
+    "wikiqa": "document ID; all question/sentence pairs for a document stay together"
+  },
+  "suite_id": "public-human-benchmark-v1",
+  "workloads": {
+    "asap2-source-essay-v1": {
+      "calibration_source_groups": 442,
+      "decisions": 4005,
+      "labels_by_split": {
+        "calibration": {
+          "score-1": 31,
+          "score-2": 104,
+          "score-3": 156,
+          "score-4": 107,
+          "score-5": 38,
+          "score-6": 6
+        },
+        "development": {
+          "score-1": 39,
+          "score-2": 120,
+          "score-3": 217,
+          "score-4": 165,
+          "score-5": 41,
+          "score-6": 4
+        },
+        "locked_test": {
+          "score-1": 54,
+          "score-2": 154,
+          "score-3": 194,
+          "score-4": 146,
+          "score-5": 46,
+          "score-6": 9
+        },
+        "train": {
+          "score-1": 206,
+          "score-2": 547,
+          "score-3": 808,
+          "score-4": 587,
+          "score-5": 205,
+          "score-6": 21
+        }
+      },
+      "reason": "No model evaluation or independent policy certification performed.",
+      "selective_error_certified": false,
+      "split_counts": {
+        "calibration": 442,
+        "development": 586,
+        "locked_test": 603,
+        "train": 2374
+      }
+    },
+    "banking77-16-intent-v1": {
+      "calibration_source_groups": 240,
+      "decisions": 2793,
+      "labels_by_split": {
+        "calibration": {
+          "activate_my_card": 16,
+          "age_limit": 8,
+          "apple_pay_or_google_pay": 22,
+          "atm_support": 14,
+          "automatic_top_up": 14,
+          "balance_not_updated_after_bank_transfer": 16,
+          "balance_not_updated_after_cheque_or_cash_deposit": 21,
+          "beneficiary_not_allowed": 14,
+          "cancel_transfer": 23,
+          "card_about_to_expire": 15,
+          "card_acceptance": 5,
+          "card_arrival": 25,
+          "card_delivery_estimate": 12,
+          "card_linking": 14,
+          "card_not_working": 7,
+          "card_payment_fee_charged": 14
+        },
+        "development": {
+          "activate_my_card": 19,
+          "age_limit": 15,
+          "apple_pay_or_google_pay": 11,
+          "atm_support": 10,
+          "automatic_top_up": 17,
+          "balance_not_updated_after_bank_transfer": 27,
+          "balance_not_updated_after_cheque_or_cash_deposit": 33,
+          "beneficiary_not_allowed": 18,
+          "cancel_transfer": 22,
+          "card_about_to_expire": 13,
+          "card_acceptance": 7,
+          "card_arrival": 24,
+          "card_delivery_estimate": 12,
+          "card_linking": 17,
+          "card_not_working": 16,
+          "card_payment_fee_charged": 36
+        },
+        "locked_test": {
+          "activate_my_card": 67,
+          "age_limit": 65,
+          "apple_pay_or_google_pay": 52,
+          "atm_support": 54,
+          "automatic_top_up": 61,
+          "balance_not_updated_after_bank_transfer": 63,
+          "balance_not_updated_after_cheque_or_cash_deposit": 65,
+          "beneficiary_not_allowed": 60,
+          "cancel_transfer": 52,
+          "card_about_to_expire": 61,
+          "card_acceptance": 46,
+          "card_arrival": 63,
+          "card_delivery_estimate": 56,
+          "card_linking": 61,
+          "card_not_working": 57,
+          "card_payment_fee_charged": 66
+        },
+        "train": {
+          "activate_my_card": 97,
+          "age_limit": 62,
+          "apple_pay_or_google_pay": 77,
+          "atm_support": 47,
+          "automatic_top_up": 73,
+          "balance_not_updated_after_bank_transfer": 105,
+          "balance_not_updated_after_cheque_or_cash_deposit": 102,
+          "beneficiary_not_allowed": 104,
+          "cancel_transfer": 100,
+          "card_about_to_expire": 80,
+          "card_acceptance": 37,
+          "card_arrival": 81,
+          "card_delivery_estimate": 72,
+          "card_linking": 87,
+          "card_not_working": 72,
+          "card_payment_fee_charged": 111
+        }
+      },
+      "reason": "No model evaluation or independent policy certification performed.",
+      "selective_error_certified": false,
+      "split_counts": {
+        "calibration": 240,
+        "development": 297,
+        "locked_test": 949,
+        "train": 1307
+      }
+    },
+    "wikiqa-answer-relevance-v1": {
+      "calibration_source_groups": 202,
+      "decisions": 26328,
+      "labels_by_split": {
+        "calibration": {
+          "false": 1784,
+          "true": 99
+        },
+        "development": {
+          "false": 4901,
+          "true": 278
+        },
+        "locked_test": {
+          "false": 7768,
+          "true": 399
+        },
+        "train": {
+          "false": 10512,
+          "true": 587
+        }
+      },
+      "reason": "No model evaluation or independent policy certification performed.",
+      "selective_error_certified": false,
+      "split_counts": {
+        "calibration": 1883,
+        "development": 5179,
+        "locked_test": 8167,
+        "train": 11099
+      }
+    }
+  }
+}

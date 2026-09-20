@@ -22,7 +22,7 @@ class Annotation(StrictModel):
 
 
 class Provenance(StrictModel):
-    kind: Literal["synthetic", "production", "challenge"]
+    kind: Literal["synthetic", "production", "challenge", "public-benchmark"]
     author: Identifier
 
 

@@ -16,6 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+data = ["pypdf==6.10.0"]
 inference = [
   "accelerate>=1.12,<2",
   "huggingface-hub>=1.4,<2",
@@ -36,13 +37,14 @@ jah-benchmark = "jah.benchmark:main"
 jah-eval = "jah.evaluation:main"
 jah-order-bias = "jah.diagnostics.order_bias:main"
 jah-serve = "jah.service:main"
+jah-public-data = "jah.public_data:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jah"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 
 [tool.ruff]

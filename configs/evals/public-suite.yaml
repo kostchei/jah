@@ -1,0 +1,9 @@
+schema_version: 1
+suite_id: public-human-benchmark-v1
+dataset: evals/data/public/suite.jsonl
+minimum_decisions: 1000
+required_primitives: [choice, boolean, score]
+required_annotation_status: [upstream-human]
+split_seed: jah-public-v1
+purpose: public-benchmark-only
+production_release_approved: false
