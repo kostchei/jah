@@ -1,0 +1,24 @@
+{
+  "adapter_type": "lora",
+  "base_model": "Qwen/Qwen3.5-4B",
+  "base_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "config": {
+    "alpha": 16.0,
+    "batch_size": 4,
+    "dropout": 0.05,
+    "epochs": 1,
+    "learning_rate": 0.0001,
+    "max_grad_norm": 1.0,
+    "rank": 8,
+    "schema_version": 1,
+    "target_modules": [
+      "q_proj",
+      "v_proj",
+      "lm_head"
+    ]
+  },
+  "created_at": "2026-09-20T07:52:47.816138+00:00",
+  "dataset_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed",
+  "schema_version": 1,
+  "weights_sha256": "22a95a18caff8ceeb3d932df16a1c0b0b61320b033e1da7ec283da58d5d0585a"
+}

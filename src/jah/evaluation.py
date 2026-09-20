@@ -141,6 +141,10 @@ def run_evaluation(args: argparse.Namespace) -> int:
         for example in examples
         if manifest["assignments"][example.example_id] == args.split
     ]
+    if getattr(args, "workload", None):
+        selected = [e for e in selected if e.workload_id == args.workload]
+    if getattr(args, "max_examples", None):
+        selected = selected[: args.max_examples]
     if not selected:
         raise ValueError(f"split {args.split!r} contains no examples")
 
@@ -744,6 +748,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--profiles-dir", default="configs/profiles")
     run.add_argument("--use-workload-profiles", action="store_true", default=False)
     run.add_argument("--adapter-dir", default=None, help="Optional path to LoRA adapter bundle")
+    run.add_argument("--workload", default=None, help="Optional workload filter")
+    run.add_argument("--max-examples", type=int, default=None, help="Optional limit on evaluated examples")
     run.add_argument("--output", required=True)
     run.add_argument("--predictions", required=True)
     run.set_defaults(function=run_evaluation)

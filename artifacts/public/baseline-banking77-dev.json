@@ -1,0 +1,65 @@
+{
+  "artifact_id": "qwen3.5-4b-m0",
+  "backend": "direct",
+  "created_at": "2026-09-20T07:54:06.315154+00:00",
+  "dataset_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed",
+  "decisions": 297,
+  "evaluation_scope": "public-benchmark",
+  "evidence_sha256": "2dbdeec37f1dca0211352699bdaf7860b87510b3ffde0b1eec8822f43ea1514b",
+  "examples": 297,
+  "latency_ms": {
+    "median_request": 89.59239997784607,
+    "p95_request": 118.12739999732003
+  },
+  "metrics": {
+    "banking77-16-intent-v1/choice": {
+      "accuracy": 0.8282828282828283,
+      "balanced_accuracy": 0.8219276463882694,
+      "calibration": {
+        "brier_score": 0.2646166643403497,
+        "ece": 0.05412491393410395,
+        "gate_brier_passed": true,
+        "gate_ece_passed": false,
+        "gate_passed": false,
+        "nll": 0.7372775106159731,
+        "prevalence_brier": 0.9263000374111436
+      },
+      "decisions": 297,
+      "labels": [
+        "activate_my_card",
+        "age_limit",
+        "apple_pay_or_google_pay",
+        "atm_support",
+        "automatic_top_up",
+        "balance_not_updated_after_bank_transfer",
+        "balance_not_updated_after_cheque_or_cash_deposit",
+        "beneficiary_not_allowed",
+        "cancel_transfer",
+        "card_about_to_expire",
+        "card_acceptance",
+        "card_arrival",
+        "card_delivery_estimate",
+        "card_linking",
+        "card_not_working",
+        "card_payment_fee_charged"
+      ],
+      "macro_f1": 0.812566779144986,
+      "selective": {
+        "accepted_count": 0,
+        "accepted_error_95_upper_bound": 1.0,
+        "accepted_error_rate": 0.0,
+        "coverage": 0.0,
+        "gate_passed": false,
+        "review_count": 297,
+        "samples_sufficient_for_gate": false
+      }
+    }
+  },
+  "model_config_sha256": "730c408b091d08a2cf5977419597757ddfadd0315a5dbf1c6b0ddf971ce692e4",
+  "predictions_sha256": "a658832cf6362ef9c80a2e251fe050e5e23d737b005ae805ac2249ce5567812a",
+  "release_annotation_ready": false,
+  "schema_version": 1,
+  "source_commit_sha": "eed7b8c80c0293cc0e0a1d7ba735debb982e4769",
+  "split": "development",
+  "split_assignment_sha256": "e234623899fdbd8cc7aa95b263e418330c9333944934b8e14a4ea5b9039724d7"
+}

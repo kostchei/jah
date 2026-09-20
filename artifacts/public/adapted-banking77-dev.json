@@ -1,0 +1,65 @@
+{
+  "artifact_id": "qwen3.5-4b-m0",
+  "backend": "direct",
+  "created_at": "2026-09-20T07:54:52.168743+00:00",
+  "dataset_sha256": "5a81715551c22eb7c75709e93dbb1508be5d6efd43505e81e5cf1d67f1001eed",
+  "decisions": 297,
+  "evaluation_scope": "public-benchmark",
+  "evidence_sha256": "d1e0470d63f5b4353925349f357b14f64b3d4765542416f001a144c887a86d16",
+  "examples": 297,
+  "latency_ms": {
+    "median_request": 88.51010000216775,
+    "p95_request": 114.47890000999905
+  },
+  "metrics": {
+    "banking77-16-intent-v1/choice": {
+      "accuracy": 0.9158249158249159,
+      "balanced_accuracy": 0.9141538053593007,
+      "calibration": {
+        "brier_score": 0.15247801103846023,
+        "ece": 0.05419549506521386,
+        "gate_brier_passed": true,
+        "gate_ece_passed": false,
+        "gate_passed": false,
+        "nll": 0.44401592389582434,
+        "prevalence_brier": 0.9263000374111436
+      },
+      "decisions": 297,
+      "labels": [
+        "activate_my_card",
+        "age_limit",
+        "apple_pay_or_google_pay",
+        "atm_support",
+        "automatic_top_up",
+        "balance_not_updated_after_bank_transfer",
+        "balance_not_updated_after_cheque_or_cash_deposit",
+        "beneficiary_not_allowed",
+        "cancel_transfer",
+        "card_about_to_expire",
+        "card_acceptance",
+        "card_arrival",
+        "card_delivery_estimate",
+        "card_linking",
+        "card_not_working",
+        "card_payment_fee_charged"
+      ],
+      "macro_f1": 0.9111909655286284,
+      "selective": {
+        "accepted_count": 0,
+        "accepted_error_95_upper_bound": 1.0,
+        "accepted_error_rate": 0.0,
+        "coverage": 0.0,
+        "gate_passed": false,
+        "review_count": 297,
+        "samples_sufficient_for_gate": false
+      }
+    }
+  },
+  "model_config_sha256": "730c408b091d08a2cf5977419597757ddfadd0315a5dbf1c6b0ddf971ce692e4",
+  "predictions_sha256": "697319a29e11d09166336433161dd58936c9ac8e57c011ffe8bda28c58fb296f",
+  "release_annotation_ready": false,
+  "schema_version": 1,
+  "source_commit_sha": "eed7b8c80c0293cc0e0a1d7ba735debb982e4769",
+  "split": "development",
+  "split_assignment_sha256": "e234623899fdbd8cc7aa95b263e418330c9333944934b8e14a4ea5b9039724d7"
+}

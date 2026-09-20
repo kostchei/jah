@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import time
 from datetime import UTC, datetime
@@ -37,6 +38,7 @@ def train_adapter(
     batch_size: int | None = None,
     learning_rate: float | None = None,
     gradient_accumulation_steps: int = 4,
+    max_input_tokens: int = 2048,
     device: str = "cuda",
     seed: int = 42,
     log_interval: int = 25,
@@ -90,6 +92,9 @@ def train_adapter(
     use_cuda = device == "cuda" and torch.cuda.is_available()
     dev = torch.device("cuda" if use_cuda else "cpu")
 
+    if use_cuda:
+        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
     tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
     model = AutoModelForMultimodalLM.from_pretrained(
         model_id,
@@ -101,6 +106,12 @@ def train_adapter(
     # Freeze base model
     for param in model.parameters():
         param.requires_grad = False
+
+    if use_cuda:
+        if hasattr(model, "gradient_checkpointing_enable"):
+            model.gradient_checkpointing_enable()
+        if hasattr(model, "enable_input_require_grads"):
+            model.enable_input_require_grads()
 
     lora_modules = inject_lora(model, lora_config)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
@@ -130,35 +141,46 @@ def train_adapter(
         accumulated_loss = 0.0
 
         for idx, example in enumerate(shuffled):
-            compiled = compile_request(example.request, tokenizer=tokenizer)
-            for q_compiled in compiled:
-                if q_compiled.label_token_ids is None:
-                    continue
-                q_id = q_compiled.question_id
-                reference = example.reference_answers[q_id]
-
-                if reference not in q_compiled.option_ids:
-                    continue
-                target_idx = q_compiled.option_ids.index(reference)
-
-                encoded = tokenizer(
-                    q_compiled.prompt,
-                    return_tensors="pt",
-                    add_special_tokens=False,
+            try:
+                compiled = compile_request(
+                    example.request, tokenizer=tokenizer, max_input_tokens=8192
                 )
-                encoded = {k: v.to(dev) for k, v in encoded.items()}
+                for q_compiled in compiled:
+                    if q_compiled.label_token_ids is None:
+                        continue
+                    if q_compiled.input_tokens and q_compiled.input_tokens > max_input_tokens:
+                        continue
+                    q_id = q_compiled.question_id
+                    reference = example.reference_answers[q_id]
 
-                outputs = model(**encoded, use_cache=False)
-                last_logits = outputs.logits[:, -1, :]
+                    if reference not in q_compiled.option_ids:
+                        continue
+                    target_idx = q_compiled.option_ids.index(reference)
 
-                loss = compute_decision_loss(
-                    last_logits,
-                    [target_idx],
-                    q_compiled.label_token_ids,
-                )
-                loss_scaled = loss / gradient_accumulation_steps
-                loss_scaled.backward()
-                accumulated_loss += loss.item()
+                    encoded = tokenizer(
+                        q_compiled.prompt,
+                        return_tensors="pt",
+                        add_special_tokens=False,
+                    )
+                    encoded = {k: v.to(dev) for k, v in encoded.items()}
+
+                    outputs = model(**encoded, use_cache=False)
+                    last_logits = outputs.logits[:, -1, :]
+
+                    loss = compute_decision_loss(
+                        last_logits,
+                        [target_idx],
+                        q_compiled.label_token_ids,
+                    )
+                    loss_scaled = loss / gradient_accumulation_steps
+                    loss_scaled.backward()
+                    accumulated_loss += loss.item()
+            except torch.OutOfMemoryError:
+                if use_cuda:
+                    torch.cuda.empty_cache()
+                optimizer.zero_grad()
+                accumulated_loss = 0.0
+                continue
 
             if (idx + 1) % gradient_accumulation_steps == 0 or (idx + 1) == len(shuffled):
                 if lora_config.max_grad_norm > 0:
@@ -232,6 +254,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--learning-rate", type=float, default=None)
     parser.add_argument("--gradient-accumulation-steps", type=int, default=4)
+    parser.add_argument("--max-input-tokens", type=int, default=2048)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--output-dir", default="artifacts/adapters/qwen3.5-4b-public-v1")
     parser.add_argument("--log-interval", type=int, default=25)
@@ -252,6 +275,7 @@ def main(argv: list[str] | None = None) -> int:
         batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
+        max_input_tokens=args.max_input_tokens,
         device=args.device,
         log_interval=args.log_interval,
     )
