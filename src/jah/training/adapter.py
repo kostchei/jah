@@ -57,15 +57,66 @@ class LoRALinear(nn.Module):
         in_features = base_layer.in_features
         out_features = base_layer.out_features
 
+        device = base_layer.weight.device
+        dtype = base_layer.weight.dtype
+
         # Initialize A with Kaiming uniform, B with zeros (so ΔW = 0 at start)
-        self.lora_A = nn.Parameter(torch.empty(rank, in_features))
-        self.lora_B = nn.Parameter(torch.zeros(out_features, rank))
+        self.lora_A = nn.Parameter(torch.empty(rank, in_features, device=device, dtype=dtype))
+        self.lora_B = nn.Parameter(torch.zeros(out_features, rank, device=device, dtype=dtype))
         nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         base_out = self.base_layer(x)
-        lora_out = (self.dropout(x) @ self.lora_A.T) @ self.lora_B.T * self.scaling
-        return base_out + lora_out
+        lora_in = self.dropout(x.to(self.lora_A.dtype))
+        lora_out = (lora_in @ self.lora_A.T) @ self.lora_B.T * self.scaling
+        return base_out + lora_out.to(base_out.dtype)
+
+
+def _get_parent_module(root: nn.Module, path: str) -> tuple[nn.Module, str]:
+    parts = path.split(".")
+    current = root
+    for part in parts[:-1]:
+        if part.isdigit():
+            current = current[int(part)]
+        else:
+            current = getattr(current, part)
+    leaf = parts[-1]
+    return current, leaf
+
+
+def inject_lora(model: nn.Module, config: LoRAConfig) -> dict[str, LoRALinear]:
+    """Replace target nn.Linear layers matching config.target_modules with LoRALinear wrappers."""
+    lora_modules: dict[str, LoRALinear] = {}
+    for name, module in list(model.named_modules()):
+        if isinstance(module, nn.Linear):
+            matches = any(
+                name.endswith(f".{target}") or name == target
+                for target in config.target_modules
+            )
+            if matches:
+                parent, leaf = _get_parent_module(model, name)
+                lora_layer = LoRALinear(
+                    module,
+                    rank=config.rank,
+                    alpha=config.alpha,
+                    dropout=config.dropout,
+                )
+                if leaf.isdigit():
+                    parent[int(leaf)] = lora_layer
+                else:
+                    setattr(parent, leaf, lora_layer)
+                lora_modules[name] = lora_layer
+    return lora_modules
+
+
+def remove_lora(model: nn.Module, lora_modules: dict[str, LoRALinear]) -> None:
+    """Restore the original base layers from LoRALinear wrappers."""
+    for name, lora_layer in lora_modules.items():
+        parent, leaf = _get_parent_module(model, name)
+        if leaf.isdigit():
+            parent[int(leaf)] = lora_layer.base_layer
+        else:
+            setattr(parent, leaf, lora_layer.base_layer)
 
 
 def compute_decision_loss(

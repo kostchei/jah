@@ -8,7 +8,9 @@ from jah.training.adapter import (
     LoRALinear,
     compute_decision_loss,
     export_adapter,
+    inject_lora,
     load_adapter_into_model,
+    remove_lora,
 )
 
 
@@ -104,3 +106,44 @@ def test_export_and_load_adapter(tmp_path):
     loaded_manifest = load_adapter_into_model(new_modules, tmp_path / "test_adapter")
     assert loaded_manifest["base_model"] == "test-model"
     assert torch.allclose(new_modules["layer1"].lora_B, modules["layer1"].lora_B)
+
+
+def test_inject_and_remove_lora():
+    class DummyBlock(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.q_proj = nn.Linear(16, 16)
+            self.v_proj = nn.Linear(16, 16)
+            self.dense = nn.Linear(16, 16)
+
+    class DummyModel(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.layers = nn.ModuleList([DummyBlock(), DummyBlock()])
+            self.lm_head = nn.Linear(16, 32)
+
+    model = DummyModel()
+    config = LoRAConfig(rank=4, target_modules=["q_proj", "v_proj", "lm_head"])
+
+    lora_modules = inject_lora(model, config)
+    # 2 blocks * (q_proj + v_proj) + 1 lm_head = 5 lora modules
+    assert len(lora_modules) == 5
+    assert isinstance(model.layers[0].q_proj, LoRALinear)
+    assert isinstance(model.layers[1].v_proj, LoRALinear)
+    assert isinstance(model.lm_head, LoRALinear)
+    assert isinstance(model.layers[0].dense, nn.Linear)  # Not targeted
+
+    # Base layers frozen, LoRA parameters require grad
+    assert not model.layers[0].q_proj.base_layer.weight.requires_grad
+    assert model.layers[0].q_proj.lora_A.requires_grad
+    assert model.layers[0].q_proj.lora_B.requires_grad
+
+    # Forward pass works
+    x = torch.randn(2, 16)
+    out = model.lm_head(x)
+    assert out.shape == (2, 32)
+
+    # Remove LoRA and verify restoration
+    remove_lora(model, lora_modules)
+    assert isinstance(model.layers[0].q_proj, nn.Linear)
+    assert isinstance(model.lm_head, nn.Linear)

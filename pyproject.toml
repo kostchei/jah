@@ -38,6 +38,7 @@ jah-eval = "jah.evaluation:main"
 jah-order-bias = "jah.diagnostics.order_bias:main"
 jah-serve = "jah.service:main"
 jah-public-data = "jah.public_data:main"
+jah-train = "jah.training.train:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jah"]

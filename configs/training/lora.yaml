@@ -2,7 +2,7 @@ schema_version: 1
 rank: 8
 alpha: 16.0
 dropout: 0.05
-target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+target_modules: ["q_proj", "v_proj", "lm_head"]
 learning_rate: 0.0001
 batch_size: 4
 epochs: 3

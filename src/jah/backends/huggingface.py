@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from jah.compiler import CompiledQuestion
 from jah.scoring import (
@@ -23,9 +24,18 @@ class InferenceMeasurement:
     input_tokens: int
     peak_vram_bytes: int
 
-
 class HuggingFaceDirectLogitBackend:
-    def __init__(self, model_id: str, revision: str, *, device: str = "cuda") -> None:
+    def __init__(
+        self,
+        model_id: str,
+        revision: str,
+        *,
+        device: str = "cuda",
+        adapter_dir: str | Path | None = None,
+    ) -> None:
+        import json
+        from pathlib import Path
+
         import torch
         from transformers import AutoModelForMultimodalLM, AutoTokenizer
 
@@ -40,6 +50,20 @@ class HuggingFaceDirectLogitBackend:
             dtype=torch.bfloat16 if device == "cuda" else torch.float32,
             low_cpu_mem_usage=True,
         ).to(self.device)
+
+        self.adapter_dir = Path(adapter_dir).resolve() if adapter_dir else None
+        self.lora_modules = None
+        if self.adapter_dir:
+            from jah.training.adapter import LoRAConfig, inject_lora, load_adapter_into_model
+
+            manifest_path = self.adapter_dir / "adapter_manifest.json"
+            if not manifest_path.exists():
+                raise FileNotFoundError(f"adapter manifest missing in {self.adapter_dir}")
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            lora_config = LoRAConfig(**manifest["config"])
+            self.lora_modules = inject_lora(self.model, lora_config)
+            load_adapter_into_model(self.lora_modules, self.adapter_dir)
+
         self.model.eval()
 
     def score(

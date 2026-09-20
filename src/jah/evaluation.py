@@ -80,22 +80,26 @@ def _quadratic_weighted_kappa(pairs: list[tuple[int, int, int]]) -> float:
     return 1.0 - weighted_observed / weighted_expected
 
 
-def load_backend(name: str, model_config: dict):
+def load_backend(name: str, model_config: dict, adapter_dir: str | Path | None = None, **kwargs):
     if name == "direct":
         from jah.backends.huggingface import HuggingFaceDirectLogitBackend
 
-        backend_type = HuggingFaceDirectLogitBackend
+        return HuggingFaceDirectLogitBackend(
+            model_config["model_id"],
+            model_config["revision"],
+            device=model_config["device"],
+            adapter_dir=adapter_dir,
+        )
     elif name == "generative":
         from jah.backends.generative import HuggingFaceGenerativeBackend
 
-        backend_type = HuggingFaceGenerativeBackend
+        return HuggingFaceGenerativeBackend(
+            model_config["model_id"],
+            model_config["revision"],
+            device=model_config["device"],
+        )
     else:
         raise ValueError(f"unknown backend: {name}")
-    return backend_type(
-        model_config["model_id"],
-        model_config["revision"],
-        device=model_config["device"],
-    )
 
 
 def _load_suite_validation_params(
@@ -142,7 +146,8 @@ def run_evaluation(args: argparse.Namespace) -> int:
 
     model_path = root / args.model_config
     model_config = load_yaml(model_path)
-    backend = load_backend(args.backend, model_config)
+    adapter_dir = getattr(args, "adapter_dir", None)
+    backend = load_backend(args.backend, model_config, adapter_dir)
 
     profiles_dir_arg = getattr(args, "profiles_dir", None)
     profiles = {}
@@ -738,6 +743,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     run.add_argument("--profiles-dir", default="configs/profiles")
     run.add_argument("--use-workload-profiles", action="store_true", default=False)
+    run.add_argument("--adapter-dir", default=None, help="Optional path to LoRA adapter bundle")
     run.add_argument("--output", required=True)
     run.add_argument("--predictions", required=True)
     run.set_defaults(function=run_evaluation)
