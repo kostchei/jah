@@ -3,7 +3,7 @@ import math
 import pytest
 from pydantic import ValidationError
 
-from jah.schemas import EvaluateRequest
+from jah.schemas import BooleanAnswer, EvaluateRequest
 
 
 def test_choice_request_rejects_duplicate_ids() -> None:
@@ -58,4 +58,26 @@ def test_score_levels_must_be_ordered() -> None:
                     }
                 },
             }
+        )
+
+
+def test_boolean_answer_enforces_complement_and_threshold() -> None:
+    answer = BooleanAnswer(
+        type="boolean",
+        value=True,
+        p_true=0.7,
+        probabilities={"false": 0.3, "true": 0.7},
+        calibration_status="uncalibrated",
+        disposition="review",
+    )
+    assert answer.value is True
+
+    with pytest.raises(ValidationError, match="0.5 threshold"):
+        BooleanAnswer(
+            type="boolean",
+            value=False,
+            p_true=0.7,
+            probabilities={"false": 0.3, "true": 0.7},
+            calibration_status="uncalibrated",
+            disposition="review",
         )

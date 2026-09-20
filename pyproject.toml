@@ -9,8 +9,10 @@ description = "Local direct-logit decision service"
 readme = "JEV_AT_HOME_SPEC.md"
 requires-python = ">=3.11,<3.14"
 dependencies = [
+  "fastapi>=0.116,<1",
   "pydantic>=2.12,<3",
   "PyYAML>=6.0.3,<7",
+  "uvicorn>=0.35,<1",
 ]
 
 [project.optional-dependencies]
@@ -22,6 +24,7 @@ inference = [
   "transformers>=5.13,<6",
 ]
 dev = [
+  "httpx>=0.28,<1",
   "pytest>=9,<10",
   "pytest-cov>=7,<8",
   "ruff>=0.15,<1",
@@ -29,7 +32,10 @@ dev = [
 
 [project.scripts]
 jah-compat = "jah.compat:main"
+jah-benchmark = "jah.benchmark:main"
+jah-eval = "jah.evaluation:main"
 jah-order-bias = "jah.diagnostics.order_bias:main"
+jah-serve = "jah.service:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jah"]

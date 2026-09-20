@@ -85,6 +85,106 @@ class EvaluateRequest(StrictModel):
         return state
 
 
+Probability = Annotated[float, Field(ge=0.0, le=1.0)]
+CalibrationStatus = Literal["uncalibrated", "validated"]
+Disposition = Literal["review", "accept"]
+
+
+class AnswerBase(StrictModel):
+    calibration_status: CalibrationStatus
+    disposition: Disposition
+
+
+class BooleanAnswer(AnswerBase):
+    type: Literal["boolean"]
+    value: bool
+    p_true: Probability
+    probabilities: dict[Literal["false", "true"], Probability]
+
+    @model_validator(mode="after")
+    def valid_boolean_distribution(self) -> BooleanAnswer:
+        if set(self.probabilities) != {"false", "true"}:
+            raise ValueError("boolean probabilities must contain false and true")
+        if not math.isclose(sum(self.probabilities.values()), 1.0, abs_tol=1e-5):
+            raise ValueError("boolean probabilities must sum to one")
+        if not math.isclose(self.p_true, self.probabilities["true"], abs_tol=1e-8):
+            raise ValueError("p_true must equal the true probability")
+        if self.value != (self.p_true >= 0.5):
+            raise ValueError("boolean value must use the 0.5 threshold")
+        return self
+
+
+class ChoiceAnswer(AnswerBase):
+    type: Literal["choice"]
+    value: Identifier
+    probabilities: dict[Identifier, Probability]
+
+    @model_validator(mode="after")
+    def valid_choice_distribution(self) -> ChoiceAnswer:
+        _validate_distribution(self.value, self.probabilities)
+        return self
+
+
+class ScoreAnswer(AnswerBase):
+    type: Literal["score"]
+    level_id: Identifier
+    expected_value: float
+    probabilities: dict[Identifier, Probability]
+
+    @field_validator("expected_value")
+    @classmethod
+    def finite_expected_value(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("expected value must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def valid_score_distribution(self) -> ScoreAnswer:
+        _validate_distribution(self.level_id, self.probabilities)
+        return self
+
+
+Answer = Annotated[BooleanAnswer | ChoiceAnswer | ScoreAnswer, Field(discriminator="type")]
+
+
+class Usage(StrictModel):
+    unique_state_tokens: Annotated[int, Field(ge=0)]
+    processed_input_tokens: Annotated[int, Field(ge=0)]
+    decisions: Annotated[int, Field(ge=1)]
+
+
+class Timing(StrictModel):
+    queue: Annotated[float, Field(ge=0.0)]
+    inference: Annotated[float, Field(ge=0.0)]
+    total: Annotated[float, Field(ge=0.0)]
+
+
+class EvaluateResponse(StrictModel):
+    request_id: Identifier
+    answers: dict[Identifier, Answer]
+    artifact_id: Identifier
+    profile_id: Identifier | None
+    usage: Usage
+    timing_ms: Timing
+
+
+class HealthResponse(StrictModel):
+    status: Literal["live", "ready", "not_ready"]
+    artifact_id: Identifier | None = None
+
+
+def _validate_distribution(selected_id: str, probabilities: dict[str, float]) -> None:
+    if not probabilities:
+        raise ValueError("probabilities cannot be empty")
+    if selected_id not in probabilities:
+        raise ValueError("selected ID must appear in probabilities")
+    if not math.isclose(sum(probabilities.values()), 1.0, abs_tol=1e-5):
+        raise ValueError("probabilities must sum to one")
+    maximum = max(probabilities.values())
+    if not math.isclose(probabilities[selected_id], maximum, abs_tol=1e-8):
+        raise ValueError("selected ID must have maximum probability")
+
+
 def _require_unique_ids(items: list[ChoiceOption], kind: str) -> None:
     ids = [item.id for item in items]
     if len(ids) != len(set(ids)):

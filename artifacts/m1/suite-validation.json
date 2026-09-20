@@ -1,0 +1,38 @@
+{
+  "readiness": {
+    "annotation_status_counts": {},
+    "decisions": 0,
+    "examples": 0,
+    "failures": [
+      "needs at least 1000 decisions; found 0",
+      "suite contains no choice decisions",
+      "suite contains no boolean decisions",
+      "suite contains no score decisions"
+    ],
+    "primitive_counts": {},
+    "ready": false
+  },
+  "split_manifest": {
+    "assignment_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "assignments": {},
+    "dataset": "E:/jah/evals/data/m1-suite.jsonl",
+    "dataset_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "decision_counts": {},
+    "example_counts": {},
+    "schema_version": 1,
+    "split_policy": {
+      "group_keys": [
+        "source_group_id",
+        "near_duplicate_cluster_id"
+      ],
+      "percentages": {
+        "calibration": 10,
+        "development": 15,
+        "locked_test": 15,
+        "train": 60
+      },
+      "task_template_holdout_is_separate": true
+    },
+    "split_seed": "jah-m1-split-v1"
+  }
+}
