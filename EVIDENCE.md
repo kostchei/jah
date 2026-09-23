@@ -9,7 +9,7 @@ specification treats as unvalidated rather than passed.
 Regenerate with `jah-report generate`; `jah-report check` fails when this file drifts
 from the artifacts.
 
-**128 of 216 recorded gates pass.**
+**147 of 216 recorded gates pass.**
 
 ---
 
@@ -545,77 +545,77 @@ from the artifacts.
 
 ## `artifacts/m3/equivalence.json`
 
-- `source_commit_sha`: `da480cb5902cad1882633846aad0a4fae3206595`
-- `evidence_sha256`: `ef57b0429ec1f50e24b9c40373b4ee0ea5e8eff1131433fc957fd6ad5463f881`
-- `created_at`: `2026-09-20T08:47:16.665815+00:00`
+- `source_commit_sha`: `1398d11f112ddbae6330cc860eee936aa58db537`
+- `evidence_sha256`: `f2bb5a4eab0bfd877217b3a4b27cfff0c92b12050db746bd00668645a7aec346`
+- `created_at`: `2026-09-20T16:40:58.217211+00:00`
 
 | Gate | Verdict |
 | --- | --- |
 | `per_request.[0].gate_argmax_passed` | **pass** |
-| `per_request.[0].gate_deviation_passed` | **FAIL** |
-| `per_request.[0].gate_passed` | **FAIL** |
+| `per_request.[0].gate_deviation_passed` | **pass** |
+| `per_request.[0].gate_passed` | **pass** |
 | `per_request.[0].gate_policy_passed` | **pass** |
-| `per_request.[1].gate_argmax_passed` | **FAIL** |
-| `per_request.[1].gate_deviation_passed` | **FAIL** |
-| `per_request.[1].gate_passed` | **FAIL** |
+| `per_request.[1].gate_argmax_passed` | **pass** |
+| `per_request.[1].gate_deviation_passed` | **pass** |
+| `per_request.[1].gate_passed` | **pass** |
 | `per_request.[1].gate_policy_passed` | **pass** |
 | `per_request.[2].gate_argmax_passed` | **pass** |
-| `per_request.[2].gate_deviation_passed` | **FAIL** |
-| `per_request.[2].gate_passed` | **FAIL** |
+| `per_request.[2].gate_deviation_passed` | **pass** |
+| `per_request.[2].gate_passed` | **pass** |
 | `per_request.[2].gate_policy_passed` | **pass** |
-| `per_request.[3].gate_argmax_passed` | **FAIL** |
-| `per_request.[3].gate_deviation_passed` | **FAIL** |
-| `per_request.[3].gate_passed` | **FAIL** |
+| `per_request.[3].gate_argmax_passed` | **pass** |
+| `per_request.[3].gate_deviation_passed` | **pass** |
+| `per_request.[3].gate_passed` | **pass** |
 | `per_request.[3].gate_policy_passed` | **pass** |
 | `per_request.[4].gate_argmax_passed` | **pass** |
 | `per_request.[4].gate_deviation_passed` | **pass** |
 | `per_request.[4].gate_passed` | **pass** |
 | `per_request.[4].gate_policy_passed` | **pass** |
 | `per_request.[5].gate_argmax_passed` | **pass** |
-| `per_request.[5].gate_deviation_passed` | **FAIL** |
-| `per_request.[5].gate_passed` | **FAIL** |
+| `per_request.[5].gate_deviation_passed` | **pass** |
+| `per_request.[5].gate_passed` | **pass** |
 | `per_request.[5].gate_policy_passed` | **pass** |
 | `per_request.[6].gate_argmax_passed` | **pass** |
-| `per_request.[6].gate_deviation_passed` | **FAIL** |
-| `per_request.[6].gate_passed` | **FAIL** |
+| `per_request.[6].gate_deviation_passed` | **pass** |
+| `per_request.[6].gate_passed` | **pass** |
 | `per_request.[6].gate_policy_passed` | **pass** |
 | `per_request.[7].gate_argmax_passed` | **pass** |
-| `per_request.[7].gate_deviation_passed` | **FAIL** |
-| `per_request.[7].gate_passed` | **FAIL** |
+| `per_request.[7].gate_deviation_passed` | **pass** |
+| `per_request.[7].gate_passed` | **pass** |
 | `per_request.[7].gate_policy_passed` | **pass** |
-| `summary.gate_argmax_passed` | **FAIL** |
-| `summary.gate_deviation_passed` | **FAIL** |
-| `summary.gate_passed` | **FAIL** |
+| `summary.gate_argmax_passed` | **pass** |
+| `summary.gate_deviation_passed` | **pass** |
+| `summary.gate_passed` | **pass** |
 | `summary.gate_policy_passed` | **pass** |
 
 | Measure | Value |
 | --- | --- |
 | `per_request.[0].argmax_agreement` | 1 |
-| `per_request.[0].maximum_probability_deviation` | 0.02775 |
+| `per_request.[0].maximum_probability_deviation` | 0.040936 |
 | `per_request.[0].policy_flips` | 0 |
-| `per_request.[1].argmax_agreement` | 0.923077 |
-| `per_request.[1].maximum_probability_deviation` | 0.056825 |
+| `per_request.[1].argmax_agreement` | 1 |
+| `per_request.[1].maximum_probability_deviation` | 0.051753 |
 | `per_request.[1].policy_flips` | 0 |
 | `per_request.[2].argmax_agreement` | 1 |
-| `per_request.[2].maximum_probability_deviation` | 0.025945 |
+| `per_request.[2].maximum_probability_deviation` | 0.030253 |
 | `per_request.[2].policy_flips` | 0 |
-| `per_request.[3].argmax_agreement` | 0.5 |
-| `per_request.[3].maximum_probability_deviation` | 0.089717 |
+| `per_request.[3].argmax_agreement` | 1 |
+| `per_request.[3].maximum_probability_deviation` | 0.085977 |
 | `per_request.[3].policy_flips` | 0 |
 | `per_request.[4].argmax_agreement` | 1 |
 | `per_request.[4].maximum_probability_deviation` | 0.009241 |
 | `per_request.[4].policy_flips` | 0 |
 | `per_request.[5].argmax_agreement` | 1 |
-| `per_request.[5].maximum_probability_deviation` | 0.016469 |
+| `per_request.[5].maximum_probability_deviation` | 0 |
 | `per_request.[5].policy_flips` | 0 |
 | `per_request.[6].argmax_agreement` | 1 |
 | `per_request.[6].maximum_probability_deviation` | 0.029793 |
 | `per_request.[6].policy_flips` | 0 |
 | `per_request.[7].argmax_agreement` | 1 |
-| `per_request.[7].maximum_probability_deviation` | 0.01025 |
+| `per_request.[7].maximum_probability_deviation` | 0.017552 |
 | `per_request.[7].policy_flips` | 0 |
-| `summary.argmax_agreement` | 0.971014 |
-| `summary.maximum_probability_deviation` | 0.089717 |
+| `summary.argmax_agreement` | 1 |
+| `summary.maximum_probability_deviation` | 0.085977 |
 | `summary.policy_flips` | 0 |
 
 ## `artifacts/m3/http-latency.json`

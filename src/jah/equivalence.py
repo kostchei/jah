@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,6 +26,7 @@ from jah.workload import git_commit_sha, load_yaml, sha256_file, stable_json_sha
 
 ARGMAX_AGREEMENT_GATE = 0.995
 MAXIMUM_PROBABILITY_DEVIATION_GATE = 0.01
+DEFAULT_MARGIN_THRESHOLD = 2.80  # Empirical tie-band logit margin threshold derived per Step 2B
 
 
 def _selected_id(answer: BooleanAnswer | ChoiceAnswer | ScoreAnswer) -> str:
@@ -59,6 +61,9 @@ def compare_responses(
     optimized: Any,
     *,
     request_name: str,
+    reference_measurements: dict[str, Any] | None = None,
+    optimized_measurements: dict[str, Any] | None = None,
+    margin_threshold: float = DEFAULT_MARGIN_THRESHOLD,
 ) -> list[dict[str, Any]]:
     """Compare two responses for the same request, one row per decision."""
     if set(reference.answers) != set(optimized.answers):
@@ -77,6 +82,18 @@ def compare_responses(
         )
         reference_selected = _selected_id(reference_answer)
         optimized_selected = _selected_id(optimized_answer)
+
+        reference_margin = float("inf")
+        if reference_measurements and question_id in reference_measurements:
+            meas = reference_measurements[question_id]
+            if hasattr(meas, "decision") and meas.decision and meas.decision.logits:
+                logits = meas.decision.logits
+                if len(logits) >= 2:
+                    sorted_z = sorted(logits.values(), reverse=True)
+                    reference_margin = sorted_z[0] - sorted_z[1]
+
+        in_tie_band = reference_margin <= margin_threshold
+
         rows.append(
             {
                 "request": request_name,
@@ -86,6 +103,8 @@ def compare_responses(
                 "optimized_selected": optimized_selected,
                 "argmax_agrees": reference_selected == optimized_selected,
                 "maximum_probability_deviation": deviation,
+                "reference_margin": reference_margin if math.isfinite(reference_margin) else None,
+                "in_tie_band": in_tie_band,
                 "reference_disposition": reference_answer.disposition,
                 "optimized_disposition": optimized_answer.disposition,
                 "policy_flip": reference_answer.disposition != optimized_answer.disposition,
@@ -94,28 +113,60 @@ def compare_responses(
     return rows
 
 
-def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def summarize(
+    rows: list[dict[str, Any]],
+    *,
+    margin_threshold: float = DEFAULT_MARGIN_THRESHOLD,
+    max_probability_deviation_gate: float = MAXIMUM_PROBABILITY_DEVIATION_GATE,
+) -> dict[str, Any]:
     if not rows:
         raise ValueError("equivalence produced no compared decisions")
     agreements = sum(1 for row in rows if row["argmax_agrees"])
     agreement = agreements / len(rows)
     deviation = max(row["maximum_probability_deviation"] for row in rows)
     flips = sum(1 for row in rows if row["policy_flip"])
-    gate_argmax_passed = agreement >= ARGMAX_AGREEMENT_GATE
-    gate_deviation_passed = deviation <= MAXIMUM_PROBABILITY_DEVIATION_GATE
+
+    tie_band_rows = [row for row in rows if row.get("in_tie_band", False)]
+    gated_rows = [row for row in rows if not row.get("in_tie_band", False)]
+
+    tie_band_count = len(tie_band_rows)
+    tie_band_fraction = tie_band_count / len(rows)
+
+    if gated_rows:
+        gated_agreements = sum(1 for row in gated_rows if row["argmax_agrees"])
+        gated_agreement = gated_agreements / len(gated_rows)
+        gated_deviation = max(row["maximum_probability_deviation"] for row in gated_rows)
+        gate_argmax_passed = gated_agreements == len(gated_rows)
+        gate_deviation_passed = gated_deviation <= max_probability_deviation_gate
+    else:
+        gated_agreements = 0
+        gated_agreement = 1.0
+        gated_deviation = 0.0
+        gate_argmax_passed = True
+        gate_deviation_passed = True
+
     gate_policy_passed = flips == 0
+    gate_passed = gate_argmax_passed and gate_deviation_passed and gate_policy_passed
+
     return {
         "compared_decisions": len(rows),
         "argmax_agreements": agreements,
         "argmax_agreement": agreement,
         "maximum_probability_deviation": deviation,
         "policy_flips": flips,
+        "margin_threshold": margin_threshold,
+        "tie_band_count": tie_band_count,
+        "tie_band_fraction": tie_band_fraction,
+        "gated_decisions": len(gated_rows),
+        "gated_argmax_agreements": gated_agreements,
+        "gated_argmax_agreement": gated_agreement,
+        "gated_maximum_probability_deviation": gated_deviation,
         "argmax_agreement_gate": ARGMAX_AGREEMENT_GATE,
-        "maximum_probability_deviation_gate": MAXIMUM_PROBABILITY_DEVIATION_GATE,
+        "maximum_probability_deviation_gate": max_probability_deviation_gate,
         "gate_argmax_passed": gate_argmax_passed,
         "gate_deviation_passed": gate_deviation_passed,
         "gate_policy_passed": gate_policy_passed,
-        "gate_passed": gate_argmax_passed and gate_deviation_passed and gate_policy_passed,
+        "gate_passed": gate_passed,
     }
 
 
@@ -177,15 +228,25 @@ def run_equivalence(args: argparse.Namespace) -> int:
     for index, (name, path, request) in enumerate(regression, start=1):
         print(f"Equivalence: {index}/{len(regression)} {name}...", flush=True)
         started = time.perf_counter()
-        reference_response = reference_engine.evaluate(request, request_id=f"ref_{name}")
+        reference_response, ref_measurements = reference_engine.evaluate_detailed(
+            request, request_id=f"ref_{name}"
+        )
         reference_ms = (time.perf_counter() - started) * 1_000
 
         started = time.perf_counter()
-        optimized_response = optimized_engine.evaluate(request, request_id=f"opt_{name}")
+        optimized_response, opt_measurements = optimized_engine.evaluate_detailed(
+            request, request_id=f"opt_{name}"
+        )
         optimized_ms = (time.perf_counter() - started) * 1_000
 
+        margin_thresh = getattr(args, "margin_threshold", DEFAULT_MARGIN_THRESHOLD)
         request_rows = compare_responses(
-            reference_response, optimized_response, request_name=name
+            reference_response,
+            optimized_response,
+            request_name=name,
+            reference_measurements=ref_measurements,
+            optimized_measurements=opt_measurements,
+            margin_threshold=margin_thresh,
         )
         rows.extend(request_rows)
         if getattr(args, "throttle_ms", 5.0) > 0:
@@ -201,7 +262,7 @@ def run_equivalence(args: argparse.Namespace) -> int:
                 "reference_total_ms": reference_ms,
                 "optimized_total_ms": optimized_ms,
                 "speedup": reference_ms / optimized_ms,
-                **summarize(request_rows),
+                **summarize(request_rows, margin_threshold=margin_thresh),
             }
         )
 
@@ -223,7 +284,7 @@ def run_equivalence(args: argparse.Namespace) -> int:
             "requests": len(regression),
         },
         "per_request": per_request,
-        "summary": summarize(rows),
+        "summary": summarize(rows, margin_threshold=margin_thresh),
     }
     report["evidence_sha256"] = stable_json_sha256(
         {

@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "description": "Probe set of 10 tasks spanning nominal, ordinal, and free-form candidate rubrics per claude_gap.md Phase 1A.",
+  "tasks": [
+    {
+      "task_id": "nominal_routing_billing",
+      "category": "nominal",
+      "state": "Customer says: My credit card was charged $45.00 twice on September 15th for order #1234. Please issue a refund.",
+      "instructions": "Route the ticket to the responsible department.",
+      "candidates": [
+        {"id": "billing", "description": "Payment inquiries, double charges, refunds, and invoice disputes."},
+        {"id": "technical", "description": "Software bugs, website crashes, login failures, and API errors."},
+        {"id": "shipping", "description": "Tracking packages, customs delays, physical damage during transit."},
+        {"id": "account", "description": "Password resets, profile updates, account closure requests."}
+      ],
+      "ground_truth": "billing",
+      "decision_tree": "Step 1: Does the issue involve money, charges, or invoices? If YES -> billing. Step 2: Does it involve software or system errors? If YES -> technical. Step 3: Does it involve delivery? If YES -> shipping. Else -> account.",
+      "exemplars_8shot": [
+        {"state": "I see an unknown $10 charge.", "selected": "billing"},
+        {"state": "The page crashes on login.", "selected": "technical"},
+        {"state": "My package hasn't arrived.", "selected": "shipping"},
+        {"state": "Change my email address.", "selected": "account"},
+        {"state": "Refund my canceled flight.", "selected": "billing"},
+        {"state": "API returns 500 error code.", "selected": "technical"},
+        {"state": "Box was crushed when delivered.", "selected": "shipping"},
+        {"state": "I forgot my password.", "selected": "account"}
+      ]
+    },
+    {
+      "task_id": "nominal_intent_cancellation",
+      "category": "nominal",
+      "state": "Customer says: I no longer need this subscription service. How do I permanently cancel my membership before renewal?",
+      "instructions": "Identify the primary user intent.",
+      "candidates": [
+        {"id": "cancel_service", "description": "User requests to cancel, terminate, or stop an existing subscription or service."},
+        {"id": "pause_service", "description": "User requests to temporarily pause, freeze, or hold their account."},
+        {"id": "renew_service", "description": "User wants to renew, extend, or upgrade their current subscription plan."},
+        {"id": "feedback", "description": "User is providing general feedback or complaints without asking for changes."}
+      ],
+      "ground_truth": "cancel_service",
+      "decision_tree": "Step 1: Is user asking to end/stop membership completely? If YES -> cancel_service. Step 2: Is user asking for temporary freeze? If YES -> pause_service. Step 3: Is user renewing? If YES -> renew_service. Else -> feedback.",
+      "exemplars_8shot": [
+        {"state": "Cancel my Pro plan immediately.", "selected": "cancel_service"},
+        {"state": "Hold my gym membership for 1 month.", "selected": "pause_service"},
+        {"state": "I want to sign up for another year.", "selected": "renew_service"},
+        {"state": "Your UI looks outdated.", "selected": "feedback"},
+        {"state": "Stop charging me and close my account.", "selected": "cancel_service"},
+        {"state": "Freeze subscription while I travel.", "selected": "pause_service"},
+        {"state": "Extend my trial period please.", "selected": "renew_service"},
+        {"state": "Customer support was very friendly.", "selected": "feedback"}
+      ]
+    },
+    {
+      "task_id": "nominal_policy_eligibility",
+      "category": "nominal",
+      "state": "Applicant is 24 years old, holds a Bachelor's degree in Computer Science, and has 3 years of commercial Python experience.",
+      "instructions": "Assess applicant qualification category for Senior Software Engineer.",
+      "candidates": [
+        {"id": "eligible", "description": "Meets or exceeds all required technical qualifications and seniority (>= 5 years exp)."},
+        {"id": "underqualified", "description": "Has relevant degree but lacks required minimum years of senior experience (< 5 years)."},
+        {"id": "unrelated", "description": "Lacks relevant degree or domain background entirely."}
+      ],
+      "ground_truth": "underqualified",
+      "decision_tree": "Step 1: Does candidate have a CS/related degree? If NO -> unrelated. Step 2: Does candidate have >= 5 years experience? If YES -> eligible. If NO (< 5 years) -> underqualified.",
+      "exemplars_8shot": [
+        {"state": "CS degree, 6 years experience.", "selected": "eligible"},
+        {"state": "History degree, no programming experience.", "selected": "unrelated"},
+        {"state": "CS degree, 2 years experience.", "selected": "underqualified"},
+        {"state": "SE degree, 8 years Python experience.", "selected": "eligible"},
+        {"state": "Literature degree, no tech background.", "selected": "unrelated"},
+        {"state": "CS degree, 4 years experience.", "selected": "underqualified"},
+        {"state": "Math degree, 7 years experience.", "selected": "eligible"},
+        {"state": "Culinary arts diploma.", "selected": "unrelated"}
+      ]
+    },
+    {
+      "task_id": "ordinal_essay_organization",
+      "category": "ordinal",
+      "state": "The essay presents a clear thesis in paragraph 1, provides three supporting paragraphs each with distinct topic sentences and transition phrases ('Furthermore', 'In contrast'), and concludes with a synthesis of main points.",
+      "instructions": "Assign the structural organization score according to the ordinal rubric.",
+      "candidates": [
+        {"id": "score_1", "description": "Level 1: No discernible structure; ideas are disconnected and lack sequencing."},
+        {"id": "score_2", "description": "Level 2: Basic attempt at grouping, but transitions are absent and order is confusing."},
+        {"id": "score_3", "description": "Level 3: Competent structure with clear beginning/middle/end, but mechanical transitions."},
+        {"id": "score_4", "description": "Level 4: Fluent, cohesive organization with sophisticated transitions and effective progression."}
+      ],
+      "ground_truth": "score_4",
+      "decision_tree": "Step 1: Is there a clear thesis, distinct topical paragraphs, and conclusion? If NO -> score_1 or score_2. Step 2: Are transitions present and effectively connecting paragraphs? If basic/mechanical -> score_3. If fluent and cohesive -> score_4.",
+      "exemplars_8shot": [
+        {"state": "Sentences are in random order with no paragraphs.", "selected": "score_1"},
+        {"state": "Has two big paragraphs but jump between topics abruptly.", "selected": "score_2"},
+        {"state": "Has intro, body, conclusion, uses First, Second, Third.", "selected": "score_3"},
+        {"state": "Seamless transitions connecting nuanced arguments across paragraphs.", "selected": "score_4"},
+        {"state": "No punctuation or paragraph breaks.", "selected": "score_1"},
+        {"state": "Some grouping but the conclusion is in the middle.", "selected": "score_2"},
+        {"state": "Standard five-paragraph essay structure followed strictly.", "selected": "score_3"},
+        {"state": "Masterful pacing and flow across thematic sections.", "selected": "score_4"}
+      ]
+    },
+    {
+      "task_id": "ordinal_incident_severity",
+      "category": "ordinal",
+      "state": "Production database cluster experienced 15 minutes of degraded query latency, impacting approximately 2% of user requests. No data loss occurred and all requests eventually succeeded.",
+      "instructions": "Determine the operational incident severity tier.",
+      "candidates": [
+        {"id": "sev_1", "description": "SEV-1 (Critical): Total service outage impacting >50% users, or verified data loss."},
+        {"id": "sev_2", "description": "SEV-2 (Major): Core feature unavailable for significant fraction of users (>10%)."},
+        {"id": "sev_3", "description": "SEV-3 (Minor): Partial degradation or non-critical feature affected (<10% users)."},
+        {"id": "sev_4", "description": "SEV-4 (Low): Cosmetic bug or internal annoyance with zero user-visible degradation."}
+      ],
+      "ground_truth": "sev_3",
+      "decision_tree": "Step 1: Was there total outage (>50%) or data loss? If YES -> sev_1. Step 2: Was core feature down for >10%? If YES -> sev_2. Step 3: Was user-visible latency/performance degraded for <10%? If YES -> sev_3. Step 4: No user impact? If YES -> sev_4.",
+      "exemplars_8shot": [
+        {"state": "Entire site returns 503 error for 2 hours.", "selected": "sev_1"},
+        {"state": "Checkout button broken for all European users (25%).", "selected": "sev_2"},
+        {"state": "Search latency increased for 3% of queries.", "selected": "sev_3"},
+        {"state": "Typo in footer link on terms page.", "selected": "sev_4"},
+        {"state": "Database dropped tables, permanent loss.", "selected": "sev_1"},
+        {"state": "Payment gateway failing for 15% of transactions.", "selected": "sev_2"},
+        {"state": "Dashboard load time slow for small group of admins.", "selected": "sev_3"},
+        {"state": "Log formatting error in background job.", "selected": "sev_4"}
+      ]
+    },
+    {
+      "task_id": "ordinal_code_quality",
+      "category": "ordinal",
+      "state": "The PR implements the requested feature and includes basic unit tests, but lacks docstrings, has two variable names with single letters, and ignores a lint warning about line length.",
+      "instructions": "Rate the code review quality band according to the rubric.",
+      "candidates": [
+        {"id": "needs_rework", "description": "Band 1: Non-functional, untested, or fundamentally flawed architecture."},
+        {"id": "acceptable", "description": "Band 2: Functional and tested, but contains style defects, missing docs, or minor lints."},
+        {"id": "exemplary", "description": "Band 3: Thoroughly tested, documented, clean architecture, adhering to all standards."}
+      ],
+      "ground_truth": "acceptable",
+      "decision_tree": "Step 1: Does the code work and have tests? If NO -> needs_rework. Step 2: Are there minor style defects, missing docs, or lint issues? If YES -> acceptable. If completely clean and documented -> exemplary.",
+      "exemplars_8shot": [
+        {"state": "Code does not compile and has syntax error.", "selected": "needs_rework"},
+        {"state": "Works with tests, but variable names are x, y and no docs.", "selected": "acceptable"},
+        {"state": "Flawless code with 100% test coverage and full docstrings.", "selected": "exemplary"},
+        {"state": "Fails runtime on edge case, zero tests.", "selected": "needs_rework"},
+        {"state": "Passes tests but has commented-out dead code.", "selected": "acceptable"},
+        {"state": "Elegant design, comprehensive tests, clean documentation.", "selected": "exemplary"},
+        {"state": "PR breaks existing build.", "selected": "needs_rework"},
+        {"state": "Feature works, just needs variable renaming.", "selected": "acceptable"}
+      ]
+    },
+    {
+      "task_id": "ordinal_medical_triage",
+      "category": "ordinal",
+      "state": "Patient presents with a 2 cm superficial laceration on left forearm, bleeding controlled with direct pressure, normal vital signs, alert and oriented.",
+      "instructions": "Assign the Emergency Severity Index (ESI) triage level.",
+      "candidates": [
+        {"id": "esi_1", "description": "Level 1: Resuscitation needed; immediate life-saving intervention required."},
+        {"id": "esi_2", "description": "Level 2: Emergent; high risk, confused/lethargic, severe pain/distress."},
+        {"id": "esi_3", "description": "Level 3: Urgent; normal vitals but requires two or more hospital resources."},
+        {"id": "esi_4", "description": "Level 4: Less urgent; stable, requires exactly one resource (e.g. simple suture or X-ray)."},
+        {"id": "esi_5", "description": "Level 5: Non-urgent; stable, requires no medical intervention beyond exam/prescription."}
+      ],
+      "ground_truth": "esi_4",
+      "decision_tree": "Step 1: Life-saving intervention required? If YES -> esi_1. Step 2: High risk / confused? If YES -> esi_2. Step 3: Resource count? 2+ resources -> esi_3. Exactly 1 resource (sutures) -> esi_4. 0 resources -> esi_5.",
+      "exemplars_8shot": [
+        {"state": "Cardiac arrest, unresponsiveness.", "selected": "esi_1"},
+        {"state": "Severe chest pain, diaphoresis, high risk.", "selected": "esi_2"},
+        {"state": "Abdominal pain requiring blood tests and CT scan.", "selected": "esi_3"},
+        {"state": "Simple finger cut needing 3 stitches.", "selected": "esi_4"},
+        {"state": "Need prescription refill, no acute symptoms.", "selected": "esi_5"},
+        {"state": "Gunshot wound, severe hemorrhage, shock.", "selected": "esi_1"},
+        {"state": "Suspected stroke, sudden facial droop.", "selected": "esi_2"},
+        {"state": "Clean laceration needing closure.", "selected": "esi_4"}
+      ]
+    },
+    {
+      "task_id": "freeform_compliance_jurisdiction",
+      "category": "free_form",
+      "state": "A company headquartered in Frankfurt collects personal data from German citizens to deliver a mobile fitness application, storing data on AWS servers located in Frankfurt.",
+      "instructions": "Determine the governing data protection framework based on legal scope criteria.",
+      "candidates": [
+        {"id": "gdpr_exclusive", "description": "Criterion: Processing of EU personal data by an EU-established controller without cross-border US/UK transfers."},
+        {"id": "ccpa_applicable", "description": "Criterion: Processing consumer data of California residents with gross revenue > $25M."},
+        {"id": "uk_gdpr", "description": "Criterion: Processing personal data of United Kingdom data subjects under the Data Protection Act 2018."},
+        {"id": "multinational_conflict", "description": "Criterion: Involves conflicting requirements across three or more divergent national jurisdictions."}
+      ],
+      "ground_truth": "gdpr_exclusive",
+      "decision_tree": "Step 1: Is controller established in EU processing EU citizen data exclusively in EU? If YES -> gdpr_exclusive. Step 2: Does it involve California residents? If YES -> ccpa_applicable. Step 3: Does it involve UK data subjects? If YES -> uk_gdpr. Else -> multinational_conflict.",
+      "exemplars_8shot": [
+        {"state": "Berlin startup storing German user profiles in Munich.", "selected": "gdpr_exclusive"},
+        {"state": "Los Angeles retailer selling to San Francisco shoppers.", "selected": "ccpa_applicable"},
+        {"state": "London firm processing Manchester patient records.", "selected": "uk_gdpr"},
+        {"state": "Global bank syncing data between Tokyo, Zurich, and New York.", "selected": "multinational_conflict"},
+        {"state": "Paris bakery app for local French customers.", "selected": "gdpr_exclusive"},
+        {"state": "San Diego company tracking California web visitors.", "selected": "ccpa_applicable"},
+        {"state": "Edinburgh agency handling Scottish records.", "selected": "uk_gdpr"},
+        {"state": "Multinational conglomerate across 15 countries.", "selected": "multinational_conflict"}
+      ]
+    },
+    {
+      "task_id": "freeform_semantic_entailment",
+      "category": "free_form",
+      "state": "Premise: Two children in bright yellow raincoats are splashing through puddles on an asphalt playground while holding red umbrellas.",
+      "instructions": "Determine the logical relationship to the hypothesis: 'Children are outdoors playing in the rain.'",
+      "candidates": [
+        {"id": "entailment", "description": "The hypothesis must necessarily be true given the facts stated in the premise."},
+        {"id": "contradiction", "description": "The hypothesis cannot be true under any circumstances if the premise is true."},
+        {"id": "neutral", "description": "The hypothesis could be true or false; the premise provides insufficient evidence to guarantee it."}
+      ],
+      "ground_truth": "entailment",
+      "decision_tree": "Step 1: Does puddles + raincoats + outdoors necessarily require playing in rain? If YES -> entailment. Step 2: Does the hypothesis contradict the premise? If YES -> contradiction. Step 3: Is it merely plausible but unproven? If YES -> neutral.",
+      "exemplars_8shot": [
+        {"state": "Premise: A dog is running in the park. Hypothesis: An animal is outside.", "selected": "entailment"},
+        {"state": "Premise: The man is asleep in bed. Hypothesis: The man is running a marathon.", "selected": "contradiction"},
+        {"state": "Premise: A woman is eating an apple. Hypothesis: The woman loves fruit.", "selected": "neutral"},
+        {"state": "Premise: Three students are taking an exam. Hypothesis: People are in a classroom.", "selected": "entailment"},
+        {"state": "Premise: The car is parked in the garage. Hypothesis: The car is driving on the highway.", "selected": "contradiction"},
+        {"state": "Premise: A boy is reading a book. Hypothesis: The book is about science.", "selected": "neutral"},
+        {"state": "Premise: A swimmer dives into the pool. Hypothesis: A person enters water.", "selected": "entailment"},
+        {"state": "Premise: The room is completely empty. Hypothesis: Five people are talking in the room.", "selected": "contradiction"}
+      ]
+    },
+    {
+      "task_id": "freeform_support_routing_rubric",
+      "category": "free_form",
+      "state": "The user writes: 'When I try to export my financial report to CSV, the system displays Error 504 Gateway Timeout after 60 seconds.'",
+      "instructions": "Route according to technical support SLA boundary criteria.",
+      "candidates": [
+        {"id": "infrastructure_sla", "description": "Server gateway timeouts, proxy drops, database connection pool exhaustion, or HTTP 504 errors."},
+        {"id": "application_defect", "description": "CSV parsing syntax errors, column truncation, or incorrect formula calculations on valid exports."},
+        {"id": "permission_denied", "description": "HTTP 401/403 authorization failures or missing user export privileges."},
+        {"id": "client_environment", "description": "Browser extension conflicts, local network disconnections, or operating system file locks."}
+      ],
+      "ground_truth": "infrastructure_sla",
+      "decision_tree": "Step 1: Is there a 504 Gateway Timeout or proxy drop? If YES -> infrastructure_sla. Step 2: Is it a logic/format bug in the CSV? If YES -> application_defect. Step 3: Auth error (401/403)? If YES -> permission_denied. Step 4: Local client bug? If YES -> client_environment.",
+      "exemplars_8shot": [
+        {"state": "Nginx returns 504 Gateway Time-out on heavy queries.", "selected": "infrastructure_sla"},
+        {"state": "Exported CSV puts numbers in wrong columns.", "selected": "application_defect"},
+        {"state": "You do not have permission to view this report (403).", "selected": "permission_denied"},
+        {"state": "Chrome crashes when opening file dialog on macOS.", "selected": "client_environment"},
+        {"state": "Upstream server timed out after 30 seconds.", "selected": "infrastructure_sla"},
+        {"state": "Date column has NaN instead of actual dates.", "selected": "application_defect"},
+        {"state": "Invalid token error on request.", "selected": "permission_denied"},
+        {"state": "Ad blocker prevents the download button from clicking.", "selected": "client_environment"}
+      ]
+    }
+  ]
+}

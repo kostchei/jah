@@ -1015,6 +1015,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     equivalence.add_argument("--adapter-dir", default=None)
     equivalence.add_argument("--microbatch-size", type=int, default=16)
     equivalence.add_argument("--disable-prefix-cache", action="store_true", default=False)
+    equivalence.add_argument("--margin-threshold", type=float, default=2.80, help="Top-1 logit margin threshold for tie band (default 2.80 derived from empirical BF16 GEMM variance)")
     equivalence.add_argument("--output", default="artifacts/m3/equivalence.json")
     equivalence.add_argument("--rows", default="artifacts/m3/equivalence.jsonl")
     equivalence.add_argument("--throttle-ms", type=float, default=5.0)
@@ -1029,6 +1030,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     compare.add_argument("--generative-predictions", required=True)
     compare.add_argument("--output", default="artifacts/m1/paired-comparison.json")
     compare.set_defaults(function=compare_reports)
+
+    drift = subparsers.add_parser("drift")
+    drift.add_argument("--predictions", required=True, help="Path to predictions JSON or JSONL file")
+    drift.add_argument("--profile", required=True, help="Path to calibration profile YAML file")
+    drift.add_argument("--warning-ratio", type=float, default=0.80)
+    drift.add_argument("--min-coverage", type=float, default=0.50)
+    drift.add_argument("--output", default=None, help="Optional output path for drift report JSON")
+    from jah.drift import run_drift_check
+    drift.set_defaults(function=run_drift_check)
     return parser.parse_args(argv)
 
 

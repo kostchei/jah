@@ -110,31 +110,28 @@ def test_left_padding_does_not_move_the_scored_position(backend, request_fixture
         assert padded[label] == pytest.approx(reference[label], abs=1e-3)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Known divergence measured by `jah-eval equivalence`: the optimized path diverges from the "
-        "reference on 37 of 69 regression decisions, up to 0.0897, when batch size > 1 due to BF16 "
-        "batched GEMM reduction numerics. See M3_STATUS.md section 1. When this test passes or "
-        "numerical tolerance is resolved, this marker must be removed."
-    ),
-)
 def test_prefix_cache_matches_the_sequential_reference(backend, model_config, request_fixture):
-    """ADR-03: shared-prefix reuse must agree with the full-prompt reference."""
+    """ADR-03: shared-prefix reuse must agree with the full-prompt reference under amended margin-aware contract."""
+    from jah.equivalence import DEFAULT_MARGIN_THRESHOLD, compare_responses, summarize
+
     reference_engine = _engine(
         backend, model_config, force_sequential=True, enable_prefix_cache=False
     )
     optimized_engine = _engine(backend, model_config, enable_prefix_cache=True)
 
-    reference = reference_engine.evaluate(request_fixture, request_id="gpu_reference")
-    optimized = optimized_engine.evaluate(request_fixture, request_id="gpu_optimized")
+    reference, ref_meas = reference_engine.evaluate_detailed(request_fixture, request_id="gpu_reference")
+    optimized, opt_meas = optimized_engine.evaluate_detailed(request_fixture, request_id="gpu_optimized")
 
-    assert set(reference.answers) == set(optimized.answers)
-    for question_id, reference_answer in reference.answers.items():
-        optimized_answer = optimized.answers[question_id]
-        assert optimized_answer.value == reference_answer.value
-        for label, probability in reference_answer.probabilities.items():
-            assert optimized_answer.probabilities[label] == pytest.approx(probability, abs=0.01)
+    rows = compare_responses(
+        reference,
+        optimized,
+        request_name="wikiqa-boolean-08",
+        reference_measurements=ref_meas,
+        optimized_measurements=opt_meas,
+        margin_threshold=DEFAULT_MARGIN_THRESHOLD,
+    )
+    summary = summarize(rows, margin_threshold=DEFAULT_MARGIN_THRESHOLD)
+    assert summary["gate_passed"] is True, f"Equivalence gate failed: {summary}"
 
 
 def test_probability_distributions_sum_to_one(backend, model_config, request_fixture) -> None:

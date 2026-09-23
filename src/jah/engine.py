@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -15,6 +16,7 @@ from jah.calibration import (
 )
 from jah.compiler import CompiledQuestion, canonicalize_state, compile_request
 from jah.errors import InferenceUnavailableError
+from jah.exemplars import Exemplar, ExemplarStore
 from jah.policy import evaluate_acceptance
 from jah.schemas import (
     BooleanAnswer,
@@ -43,6 +45,7 @@ class EngineConfig:
     microbatch_size: int = 16
     enable_prefix_cache: bool = True
     force_sequential: bool = False
+    exemplar_store: ExemplarStore | None = None
     """Score every compiled question through the single-item reference path.
 
     ADR-02 names full-prompt, one-question-at-a-time scoring as the correctness reference.
@@ -58,12 +61,38 @@ class DecisionEngine:
         self.backend = backend
         self.config = config
 
-    def evaluate(self, request: EvaluateRequest, *, request_id: str | None = None) -> EvaluateResponse:
+    def evaluate(
+        self,
+        request: EvaluateRequest,
+        *,
+        request_id: str | None = None,
+        exemplars: Sequence[Exemplar] | Mapping[str, Sequence[Exemplar]] | ExemplarStore | None = None,
+        tie_break_rule: str | Mapping[str, str] | None = None,
+    ) -> EvaluateResponse:
+        response, _ = self.evaluate_detailed(
+            request,
+            request_id=request_id,
+            exemplars=exemplars,
+            tie_break_rule=tie_break_rule,
+        )
+        return response
+
+    def evaluate_detailed(
+        self,
+        request: EvaluateRequest,
+        *,
+        request_id: str | None = None,
+        exemplars: Sequence[Exemplar] | Mapping[str, Sequence[Exemplar]] | ExemplarStore | None = None,
+        tie_break_rule: str | Mapping[str, str] | None = None,
+    ) -> tuple[EvaluateResponse, dict[str, InferenceMeasurement]]:
         started = time.perf_counter()
+        effective_exemplars = exemplars if exemplars is not None else self.config.exemplar_store
         compiled = compile_request(
             request,
             tokenizer=self.backend.tokenizer,
             max_input_tokens=self.config.maximum_input_tokens,
+            exemplars=effective_exemplars,
+            tie_break_rule=tie_break_rule,
         )
 
         measurements = []
@@ -204,7 +233,7 @@ class DecisionEngine:
             item.inference_ms for item in measurements_r1
         )
         total_ms = (time.perf_counter() - started) * 1_000
-        return EvaluateResponse(
+        response = EvaluateResponse(
             request_id=request_id or f"req_{uuid.uuid4().hex}",
             answers=answers,
             artifact_id=self.config.artifact_id,
@@ -216,3 +245,8 @@ class DecisionEngine:
             ),
             timing_ms=Timing(queue=0.0, inference=inference_ms, total=total_ms),
         )
+        measurement_map = {
+            question.question_id: measurement
+            for question, measurement in zip(compiled, measurements, strict=True)
+        }
+        return response, measurement_map

@@ -63,6 +63,8 @@ class CalibrationProfile(StrictModel):
     dataset_sha256: str | None = None
     split: str | None = None
     fitted_at: str | None = None
+    backbone_hash: str | None = None
+    lora_hash: str | None = None
     metrics: CalibrationMetrics | None = None
 
     @field_validator("temperature")

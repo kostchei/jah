@@ -43,6 +43,7 @@ class HuggingFaceDirectLogitBackend:
             if not torch.cuda.is_available():
                 raise RuntimeError("CUDA was requested but torch.cuda.is_available() is false")
             torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+            torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
         self.torch = torch
         self.device = torch.device(device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)

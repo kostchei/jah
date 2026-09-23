@@ -37,8 +37,35 @@ def load_reference_engine(
     backend = HuggingFaceDirectLogitBackend(
         config["model_id"], config["revision"], device=config["device"]
     )
+    # Step 2A / ADR-07: Enforce FP32 accumulation on decision path and assert at startup
+    if config.get("device") == "cuda" or (
+        config.get("device") is None and getattr(backend, "device", None) and backend.device.type == "cuda"
+    ):
+        import torch
+
+        torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+        torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
+        assert not torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction, (
+            "allow_bf16_reduced_precision_reduction must be False on decision path (ADR-07)"
+        )
+        assert not torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction, (
+            "allow_fp16_reduced_precision_reduction must be False on decision path (ADR-07)"
+        )
+
     p_dir = Path(profiles_dir or os.environ.get("JAH_PROFILES_DIR", "configs/profiles/public"))
     profiles = load_profile_registry(p_dir)
+    # Step 3A / ADR-08: Artifact discipline - refuse startup on backbone/profile mismatch
+    for p_id, profile in profiles.items():
+        if profile.model_id != config["model_id"] or profile.revision != config["revision"]:
+            raise RuntimeError(
+                f"Startup refused per ADR-08 / Step 3A: profile {p_id!r} model {profile.model_id}@{profile.revision} "
+                f"does not match active serving backbone {config['model_id']}@{config['revision']}"
+            )
+        if profile.precision != config.get("precision", "bfloat16"):
+            raise RuntimeError(
+                f"Startup refused per ADR-08 / Step 3A: profile {p_id!r} precision {profile.precision} "
+                f"does not match active serving precision {config.get('precision')}"
+            )
     model_metadata = {
         "model_id": config.get("model_id"),
         "revision": config.get("revision"),
