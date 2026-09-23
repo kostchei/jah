@@ -105,8 +105,10 @@ def configure_resource_limits(
             max_allowed_bytes = max_total_gpu_fraction * total_bytes
             allowed_for_proc_bytes = max(0.0, max_allowed_bytes - used_other_bytes)
             proc_fraction = allowed_for_proc_bytes / total_bytes
-            # Maintain a floor of 0.45 so PyTorch has enough space if headroom permits
-            proc_fraction = min(max_total_gpu_fraction, max(0.45, proc_fraction))
+            # Never let the process claim a minimum fraction that would push combined
+            # use above the configured device budget. A too-small cap should fail the
+            # model load visibly rather than silently competing with other GPU apps.
+            proc_fraction = min(max_total_gpu_fraction, max(0.0, proc_fraction))
             torch.cuda.set_per_process_memory_fraction(proc_fraction, device_id)
             gpu_fraction_applied = round(proc_fraction, 4)
             gpu_headroom_gb = round(allowed_for_proc_bytes / (1024**3), 2)

@@ -35,7 +35,8 @@ def load_reference_engine(
     path = Path(model_config_path or os.environ.get("JAH_MODEL_CONFIG", "configs/models/qwen3.5-4b.yaml"))
     config = load_yaml(path)
     backend = HuggingFaceDirectLogitBackend(
-        config["model_id"], config["revision"], device=config["device"]
+        config["model_id"], config["revision"], device=config["device"],
+        precision=config.get("precision", "bfloat16"),
     )
     # Step 2A / ADR-07: Enforce FP32 accumulation on decision path and assert at startup
     if config.get("device") == "cuda" or (
@@ -79,7 +80,7 @@ def load_reference_engine(
         "true",
         "yes",
     )
-    force_sequential = os.environ.get("JAH_FORCE_SEQUENTIAL", "false").lower() in (
+    force_sequential = os.environ.get("JAH_FORCE_SEQUENTIAL", "true").lower() in (
         "1",
         "true",
         "yes",
@@ -220,11 +221,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--disable-prefix-cache", action="store_true", default=False)
     parser.add_argument(
         "--force-sequential",
-        action="store_true",
-        default=False,
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
-            "Serve every question through the single-item reference path (ADR-02). "
-            "Used to measure the unoptimized baseline the speedup claim divides by."
+            "Use the numerically verified single-item reference path (default); "
+            "--no-force-sequential opts into the still-under-investigation optimized path."
         ),
     )
     return parser.parse_args(argv)

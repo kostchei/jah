@@ -105,6 +105,7 @@ def score_with_prefix_cache(
         )
         label_mass = label_probability_mass(final_logit, q.label_token_ids)
         peak = torch.cuda.max_memory_allocated(device) if device.type == "cuda" else 0
+        reserved = torch.cuda.max_memory_reserved(device) if device.type == "cuda" else 0
 
         measurements.append(
             InferenceMeasurement(
@@ -113,6 +114,7 @@ def score_with_prefix_cache(
                 inference_ms=amortized_prefix_ms + suffix_ms,
                 input_tokens=len(prefix_ids) + len(suffix_ids),
                 peak_vram_bytes=int(peak),
+                peak_vram_reserved_bytes=int(reserved),
             )
         )
 

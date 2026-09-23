@@ -62,6 +62,7 @@ def batch_score_full_prompt(
 
         finals = last_unpadded_logits(outputs.logits, encoded["attention_mask"])
         peak = torch.cuda.max_memory_allocated(device) if device.type == "cuda" else 0
+        reserved = torch.cuda.max_memory_reserved(device) if device.type == "cuda" else 0
         per_q_ms = elapsed_ms / len(chunk)
 
         for j, q in enumerate(chunk):
@@ -82,6 +83,7 @@ def batch_score_full_prompt(
                     inference_ms=per_q_ms,
                     input_tokens=input_toks,
                     peak_vram_bytes=int(peak),
+                    peak_vram_reserved_bytes=int(reserved),
                 )
             )
 

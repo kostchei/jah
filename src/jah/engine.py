@@ -44,7 +44,7 @@ class EngineConfig:
     model_metadata: dict[str, Any] = field(default_factory=dict)
     microbatch_size: int = 16
     enable_prefix_cache: bool = True
-    force_sequential: bool = False
+    force_sequential: bool = True
     exemplar_store: ExemplarStore | None = None
     """Score every compiled question through the single-item reference path.
 
@@ -97,6 +97,7 @@ class DecisionEngine:
 
         measurements = []
         measurements_r1 = []
+        compiled_r1 = []
         try:
             if (
                 not self.config.force_sequential
@@ -115,12 +116,15 @@ class DecisionEngine:
                     measurements.append(self.backend.score(question))
 
             if request.order_debias_passes == 2:
-                compiled_r1 = compile_request(
+                rotated_questions = compile_request(
                     request,
                     tokenizer=self.backend.tokenizer,
                     max_input_tokens=self.config.maximum_input_tokens,
                     rotation=1,
                 )
+                # Rotation changes the candidate sequence only for choices. Avoid a
+                # redundant second model pass for booleans and ordered score levels.
+                compiled_r1 = [q for q in rotated_questions if q.primitive == "choice"]
                 if (
                     not self.config.force_sequential
                     and hasattr(self.backend, "score_batch")
@@ -140,6 +144,9 @@ class DecisionEngine:
             raise
         except Exception as exc:
             raise InferenceUnavailableError("inference failed before the atomic response") from exc
+        measurement_r1_by_id = {
+            q.question_id: m for q, m in zip(compiled_r1, measurements_r1, strict=True)
+        }
         answers = {}
         for idx, (question, measurement) in enumerate(zip(compiled, measurements, strict=True)):
             profile = self.config.profiles.get(request.profile) if request.profile else None
@@ -159,8 +166,8 @@ class DecisionEngine:
 
             decision = measurement.decision
             order_discrepancy = None
-            if measurements_r1 and idx < len(measurements_r1):
-                meas_r1 = measurements_r1[idx]
+            if question.question_id in measurement_r1_by_id:
+                meas_r1 = measurement_r1_by_id[question.question_id]
                 if decision.logits and meas_r1.decision.logits and question.primitive == "choice":
                     decision, order_discrepancy = ensemble_cyclic_logits(
                         decision,

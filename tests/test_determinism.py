@@ -59,9 +59,9 @@ def _boolean(p_true: float, disposition: str = "review") -> BooleanAnswer:
     )
 
 
-def test_margin_aware_gate_allows_flip_inside_tie_band() -> None:
-    """Near-tied candidates (margin <= 0.125) are recorded in tie band without failing the gate."""
-    # Near-tied decision with margin = 0.05 <= 0.125: reference selects "a", optimized selects "b"
+def test_tie_band_flip_is_diagnostic_but_still_fails_gate() -> None:
+    """Tie-band classification does not exempt a disagreement from release gates."""
+    # Near-tied decision: reference selects "a", optimized selects "b".
     ref = FakeResponse({"q_tie": _choice("a", {"a": 0.51, "b": 0.49})})
     opt = FakeResponse({"q_tie": _choice("b", {"a": 0.48, "b": 0.52})})
     ref_meas = {"q_tie": FakeMeasurement({"a": 10.05, "b": 10.00})}
@@ -78,10 +78,10 @@ def test_margin_aware_gate_allows_flip_inside_tie_band() -> None:
     summary = summarize(rows, margin_threshold=0.125)
     assert summary["tie_band_count"] == 1
     assert summary["tie_band_fraction"] == 1.0
-    assert summary["gated_decisions"] == 0
-    assert summary["gate_argmax_passed"] is True
-    assert summary["gate_deviation_passed"] is True
-    assert summary["gate_passed"] is True
+    assert summary["gated_decisions"] == 1
+    assert summary["gate_argmax_passed"] is False
+    assert summary["gate_deviation_passed"] is False
+    assert summary["gate_passed"] is False
 
 
 def test_margin_aware_gate_fails_flip_outside_tie_band() -> None:

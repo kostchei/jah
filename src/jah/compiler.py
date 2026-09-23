@@ -18,8 +18,8 @@ PROMPT_VERSION = "decision-prompt-v2"
 def normalize_nfc(text: str) -> str:
     """Normalize text to Unicode Normalization Form C (NFC).
 
-    Essential for Southeast Asian languages (e.g. Vietnamese tone mark composition
-    and Thai character clusters) to prevent token fragmentation and boundary shifts.
+    This canonicalizes equivalent Unicode sequences; it does not establish language
+    competence or guarantee tokenizer behavior for any language.
     """
     return unicodedata.normalize("NFC", text)
 
@@ -38,6 +38,7 @@ class CompiledQuestion:
     labels: tuple[str, ...]
     label_token_ids: tuple[int, ...] | None = None
     input_tokens: int | None = None
+    option_descriptions: tuple[str, ...] = ()
 
 
 def canonicalize_state(state: str | dict[str, Any] | list[Any]) -> str:
@@ -161,6 +162,7 @@ def compile_request(
                 labels=labels,
                 label_token_ids=label_token_ids,
                 input_tokens=input_tokens,
+                option_descriptions=descriptions,
             )
         )
     return tuple(compiled)

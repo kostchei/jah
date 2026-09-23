@@ -111,7 +111,10 @@ def test_engine_delegates_to_score_batch():
             return [self.score(q) for q in questions]
 
     backend = BatchingBackend()
-    engine = DecisionEngine(backend, EngineConfig(artifact_id="test-art", microbatch_size=8))
+    engine = DecisionEngine(
+        backend,
+        EngineConfig(artifact_id="test-art", microbatch_size=8, force_sequential=False),
+    )
     request = EvaluateRequest.model_validate({
         "state": "A shared test state.",
         "questions": {

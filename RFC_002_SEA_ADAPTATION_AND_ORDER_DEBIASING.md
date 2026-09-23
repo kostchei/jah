@@ -1,6 +1,6 @@
 # RFC 002: Southeast Asian (SEA) Adaptation, Tokenization Resilience & Order Debiasing
 
-**Status:** Implemented (Phase 2 prioritized) · **Base Specification:** `JEV_AT_HOME_SPEC.md` (RFC 001)  
+**Status:** Code paths implemented; task-level validation pending · **Base Specification:** `JEV_AT_HOME_SPEC.md` (RFC 001)
 **Date:** 2026-09-23  
 
 ---
@@ -12,20 +12,20 @@ This document records the architectural enhancements integrated into `jev-at-hom
 ### Core Enhancements Delivered:
 1. **Option A (Dual-Mode Execution):**
    - Preserves `direct_logit` gathering on base causal LMs for zero-shot workloads without data cold-starts.
-   - Adds [`HuggingFaceScalarHeadBackend`](src/jah/backends/scalar_head.py) (ADR-07) projecting last-token representations via a 1-D linear head ($W h_{\text{last}} + b$), eliminating unigram vocabulary priors and single-token label limits.
+   - Adds an experimental [`HuggingFaceScalarHeadBackend`](src/jah/backends/scalar_head.py) projecting candidate-specific last-token representations through a 1-D linear head. It avoids selecting class logits from vocabulary label tokens, but its zero-shot contrast initialization is not task-trained and has not been validated for decision quality.
 2. **Tokenization Resilience for Southeast Asia:**
-   - **Unicode Normalization (NFC):** Automatically normalizes state contexts, question instructions, and candidate descriptions to NFC in [`compiler.py`](src/jah/compiler.py) to prevent Vietnamese decomposed diacritic fragmentation (`\u0065\u0302\u0301` $\to$ `\u1EBF`) and Thai character cluster drift.
+   - **Unicode Normalization (NFC):** Canonicalizes state contexts, question instructions, and candidate descriptions to NFC in [`compiler.py`](src/jah/compiler.py). This handles canonically equivalent encodings; it does not demonstrate SEA language competence or guarantee tokenizer resilience.
    - **Isolated Answer Boundaries:** Ensures clean delimiter separation (`"\nANSWER: "`) across chat-templated models.
    - **Candidate Option Rotation:** Adds deterministic cyclic rotation (`rotation: int`) in `compile_request` to support cyclic debiasing without re-tokenizing state.
 3. **Inference-Time Order Debiasing Flag:**
    - Adds `order_debias_passes: int = Field(default=1, ge=1, le=2)` in [`schemas.py`](src/jah/schemas.py) and [`engine.py`](src/jah/engine.py).
    - `order_debias_passes = 1` (default): Ultra-low latency single forward pass.
-   - `order_debias_passes = 2`: Runs rotation 0 and cyclic rotation 1 ($M=2$), averages aligned unnormalized logits in [`scoring.py`](src/jah/scoring.py) to cancel out positional bias, and calculates order discrepancy:
+   - `order_debias_passes = 2`: Runs rotation 0 and cyclic rotation 1 ($M=2$), averages aligned unnormalized logits in [`scoring.py`](src/jah/scoring.py) as a limited two-order ensemble, and calculates order discrepancy. This may reduce order sensitivity; it does not guarantee that positional bias is eliminated.
      $$\Delta_{\text{order}} = \max_k |p_{\text{r0}}(k) - p_{\text{r1}}(k)|$$
 4. **Order Discrepancy Policy Gating:**
    - Added `max_order_discrepancy` to [`AcceptancePolicy`](src/jah/policy.py). If $\Delta_{\text{order}} > \tau_{\text{order}}$, the decision is automatically demoted to `disposition: review` to prevent overconfident mistakes caused by option permutation.
 5. **Context-Free Prior Subtraction:**
-   - Implemented `debias_null_prior(logits, prior_logits, beta=1.0)` in [`scoring.py`](src/jah/scoring.py) to cancel base model unigram label preferences ($z - \beta z_0$).
+   - Implemented `debias_null_prior(logits, prior_logits, beta=1.0)` as an isolated helper in [`scoring.py`](src/jah/scoring.py). It has no engine call site and is not currently part of inference behavior; any future integration requires task-level evaluation.
 6. **SEA-LION Model Configurations:**
    - Added [`configs/models/sealion-qwen-8b.yaml`](configs/models/sealion-qwen-8b.yaml) targeting `aisingapore/Qwen-SEA-LION-v4-8B-IT` with native Southeast Asian vocabulary.
    - Added [`configs/models/qwen3.5-4b-sea.yaml`](configs/models/qwen3.5-4b-sea.yaml) with NFC tokenizer settings.

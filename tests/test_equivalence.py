@@ -102,6 +102,30 @@ def test_summarize_fails_on_excess_probability_deviation() -> None:
     assert summary["gate_passed"] is False
 
 
+def test_tie_band_is_diagnostic_and_does_not_exempt_decisions_from_gates() -> None:
+    rows = [
+        {
+            "argmax_agrees": True,
+            "maximum_probability_deviation": 0.001,
+            "policy_flip": False,
+            "in_tie_band": False,
+        },
+        {
+            "argmax_agrees": True,
+            "maximum_probability_deviation": 0.02,
+            "policy_flip": False,
+            "in_tie_band": True,
+        },
+    ]
+
+    summary = summarize(rows)
+
+    assert summary["tie_band_count"] == 1
+    assert summary["gated_decisions"] == 2
+    assert summary["gate_deviation_passed"] is False
+    assert summary["gate_passed"] is False
+
+
 def test_summarize_rejects_an_empty_comparison() -> None:
     with pytest.raises(ValueError, match="no compared decisions"):
         summarize([])

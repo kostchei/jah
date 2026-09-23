@@ -219,7 +219,7 @@ def test_public_suite_runs_and_calibrates_without_promoting_profiles(
         "label_version: latin-uppercase-bare-v2\nmaximum_input_tokens: 8192\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(evaluation, "load_backend", lambda *_: FakeBackend())
+    monkeypatch.setattr(evaluation, "load_backend", lambda *_, **__: FakeBackend())
     base = ["--root", str(tmp_path)]
     common = ["--dataset", "suite.jsonl", "--suite-config", "suite.yaml",
               "--model-config", "model.yaml"]

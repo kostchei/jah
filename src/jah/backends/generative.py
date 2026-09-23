@@ -74,7 +74,7 @@ class HuggingFaceGenerativeBackend:
                 probabilities=probabilities,
                 expected_value=expected_value,
             ),
-            label_mass=1.0,
+            label_mass=None,
             inference_ms=inference_ms,
             input_tokens=input_length,
             peak_vram_bytes=int(peak),

@@ -290,11 +290,24 @@ def test_engine_order_debias_two_passes() -> None:
     request = make_request().model_copy(update={"order_debias_passes": 2})
 
     response = engine.evaluate(request)
-    # 3 questions in original pass + 3 questions in rotated pass = 6 calls
-    assert len(backend.calls) == 6
+    # 3 original questions plus a second pass only for the rotatable choice.
+    assert len(backend.calls) == 4
     # Choice answer has order_discrepancy computed
     assert response.answers["route"].order_discrepancy is not None
     assert isinstance(response.answers["route"].order_discrepancy, float)
     # Usage accounts for both passes
-    assert response.usage.processed_input_tokens == 60
+    assert response.usage.processed_input_tokens == 40
+    assert response.answers["relevant"].order_discrepancy is None
+    assert response.answers["quality"].order_discrepancy is None
 
+
+def test_engine_defaults_to_reference_path() -> None:
+    config = EngineConfig(artifact_id="test-artifact")
+    assert config.force_sequential is True
+
+
+def test_service_requires_explicit_opt_in_to_optimized_path() -> None:
+    from jah.service import parse_args
+
+    assert parse_args([]).force_sequential is True
+    assert parse_args(["--no-force-sequential"]).force_sequential is False

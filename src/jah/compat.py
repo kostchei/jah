@@ -77,10 +77,18 @@ def _gpu_compute_apps() -> list[dict[str, str]]:
 
 
 def require_minimum_label_mass(
-    measurements: list[tuple[str, float]], minimum_label_mass: float
+    measurements: list[tuple[str, float | None]], minimum_label_mass: float
 ) -> None:
     if not 0.0 <= minimum_label_mass <= 1.0:
         raise ValueError("minimum_label_mass must be between 0 and 1")
+    unavailable = [example_id for example_id, label_mass in measurements if label_mass is None]
+    if unavailable:
+        preview = ", ".join(unavailable[:5])
+        suffix = "..." if len(unavailable) > 5 else ""
+        raise ValueError(
+            "full-vocabulary label mass is not measured by this backend: "
+            f"{preview}{suffix}"
+        )
     failures = [
         (example_id, label_mass)
         for example_id, label_mass in measurements

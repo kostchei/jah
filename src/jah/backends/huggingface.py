@@ -19,10 +19,11 @@ from jah.scoring import (
 @dataclass(frozen=True)
 class InferenceMeasurement:
     decision: ScoredDecision
-    label_mass: float
+    label_mass: float | None
     inference_ms: float
     input_tokens: int
     peak_vram_bytes: int
+    peak_vram_reserved_bytes: int = 0
 
 class HuggingFaceDirectLogitBackend:
     def __init__(
@@ -31,6 +32,7 @@ class HuggingFaceDirectLogitBackend:
         revision: str,
         *,
         device: str = "cuda",
+        precision: str = "bfloat16",
         adapter_dir: str | Path | None = None,
     ) -> None:
         import json
@@ -39,18 +41,31 @@ class HuggingFaceDirectLogitBackend:
         import torch
         from transformers import AutoModelForMultimodalLM, AutoTokenizer
 
+        precision_dtypes = {
+            "bfloat16": torch.bfloat16,
+            "float16": torch.float16,
+            "float32": torch.float32,
+        }
+        if precision not in precision_dtypes:
+            raise ValueError(f"unsupported inference precision: {precision}")
+        dtype = precision_dtypes[precision] if device == "cuda" else torch.float32
+
         if device == "cuda":
             if not torch.cuda.is_available():
                 raise RuntimeError("CUDA was requested but torch.cuda.is_available() is false")
-            torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
-            torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
+            if precision == "bfloat16":
+                torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+            if precision == "float16":
+                torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
+            if precision == "float32":
+                torch.backends.cuda.matmul.allow_tf32 = False
         self.torch = torch
         self.device = torch.device(device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
         self.model = AutoModelForMultimodalLM.from_pretrained(
             model_id,
             revision=revision,
-            dtype=torch.bfloat16 if device == "cuda" else torch.float32,
+            dtype=dtype,
             low_cpu_mem_usage=True,
         ).to(self.device)
 
@@ -100,12 +115,14 @@ class HuggingFaceDirectLogitBackend:
         )
         label_mass = label_probability_mass(final, question.label_token_ids)
         peak = torch.cuda.max_memory_allocated(self.device) if self.device.type == "cuda" else 0
+        reserved = torch.cuda.max_memory_reserved(self.device) if self.device.type == "cuda" else 0
         return InferenceMeasurement(
             decision=decision,
             label_mass=label_mass,
             inference_ms=inference_ms,
             input_tokens=int(encoded["input_ids"].shape[-1]),
             peak_vram_bytes=int(peak),
+            peak_vram_reserved_bytes=int(reserved),
         )
 
     def score_batch(
@@ -141,4 +158,3 @@ class HuggingFaceDirectLogitBackend:
             temperature=temperature,
             microbatch_size=microbatch_size,
         )
-

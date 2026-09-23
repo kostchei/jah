@@ -26,7 +26,8 @@ from jah.workload import git_commit_sha, load_yaml, sha256_file, stable_json_sha
 
 ARGMAX_AGREEMENT_GATE = 0.995
 MAXIMUM_PROBABILITY_DEVIATION_GATE = 0.01
-DEFAULT_MARGIN_THRESHOLD = 2.80  # Empirical tie-band logit margin threshold derived per Step 2B
+DEFAULT_MARGIN_THRESHOLD = 2.80  # Diagnostic threshold only; never exempts a decision from gates.
+MAXIMUM_RESERVED_VRAM_BYTES = 22_000_000_000
 
 
 def _selected_id(answer: BooleanAnswer | ChoiceAnswer | ScoreAnswer) -> str:
@@ -126,8 +127,11 @@ def summarize(
     deviation = max(row["maximum_probability_deviation"] for row in rows)
     flips = sum(1 for row in rows if row["policy_flip"])
 
+    # Keep the historical tie-band breakdown for diagnostics, but gate every decision.
+    # A top-two logit margin does not provide a distribution-independent bound on
+    # multiclass probability deviation, so it cannot safely exempt cases from release gates.
     tie_band_rows = [row for row in rows if row.get("in_tie_band", False)]
-    gated_rows = [row for row in rows if not row.get("in_tie_band", False)]
+    gated_rows = rows
 
     tie_band_count = len(tie_band_rows)
     tie_band_fraction = tie_band_count / len(rows)
@@ -188,6 +192,8 @@ def run_equivalence(args: argparse.Namespace) -> int:
 
     model_path = root / args.model_config
     model_config = load_yaml(model_path)
+    if getattr(args, "precision", None):
+        model_config = {**model_config, "precision": args.precision}
     backend = load_backend("direct", model_config, getattr(args, "adapter_dir", None))
     if not hasattr(backend, "score_batch"):
         raise RuntimeError("the loaded backend exposes no optimized path to compare against")
@@ -225,6 +231,10 @@ def run_equivalence(args: argparse.Namespace) -> int:
 
     rows: list[dict[str, Any]] = []
     per_request = []
+    reference_reserved_samples: list[int] = []
+    reference_allocated_samples: list[int] = []
+    optimized_reserved_samples: list[int] = []
+    optimized_allocated_samples: list[int] = []
     for index, (name, path, request) in enumerate(regression, start=1):
         print(f"Equivalence: {index}/{len(regression)} {name}...", flush=True)
         started = time.perf_counter()
@@ -238,6 +248,16 @@ def run_equivalence(args: argparse.Namespace) -> int:
             request, request_id=f"opt_{name}"
         )
         optimized_ms = (time.perf_counter() - started) * 1_000
+        reference_reserved_samples.extend(
+            m.peak_vram_reserved_bytes for m in ref_measurements.values()
+        )
+        reference_allocated_samples.extend(m.peak_vram_bytes for m in ref_measurements.values())
+        optimized_reserved_samples.extend(
+            m.peak_vram_reserved_bytes for m in opt_measurements.values()
+        )
+        optimized_allocated_samples.extend(
+            m.peak_vram_bytes for m in opt_measurements.values()
+        )
 
         margin_thresh = getattr(args, "margin_threshold", DEFAULT_MARGIN_THRESHOLD)
         request_rows = compare_responses(
@@ -286,6 +306,34 @@ def run_equivalence(args: argparse.Namespace) -> int:
         "per_request": per_request,
         "summary": summarize(rows, margin_threshold=margin_thresh),
     }
+    is_cuda = getattr(getattr(backend, "device", None), "type", None) == "cuda"
+    reference_reserved = max(reference_reserved_samples, default=0)
+    optimized_reserved = max(optimized_reserved_samples, default=0)
+    optimized_allocated = max(optimized_allocated_samples, default=0)
+    device_total_memory = (
+        int(backend.torch.cuda.get_device_properties(backend.device).total_memory)
+        if is_cuda and hasattr(backend, "torch")
+        else None
+    )
+    report["memory"] = {
+        "measurement": "PyTorch peak CUDA allocator reservation during equivalence run",
+        "reference_peak_reserved_bytes": reference_reserved,
+        "reference_peak_allocated_bytes": max(reference_allocated_samples, default=0),
+        "optimized_peak_allocated_bytes": optimized_allocated,
+        "optimized_peak_reserved_bytes": optimized_reserved,
+        "device_total_memory_bytes": device_total_memory,
+        "limit_bytes": MAXIMUM_RESERVED_VRAM_BYTES,
+        "gate_passed": bool(
+            is_cuda
+            and reference_reserved > 0
+            and optimized_reserved > 0
+            and reference_reserved <= MAXIMUM_RESERVED_VRAM_BYTES
+            and optimized_reserved <= MAXIMUM_RESERVED_VRAM_BYTES
+        ),
+    }
+    report["gate_passed"] = (
+        report["summary"]["gate_passed"] and report["memory"]["gate_passed"]
+    )
     report["evidence_sha256"] = stable_json_sha256(
         {
             key: value
@@ -306,5 +354,15 @@ def run_equivalence(args: argparse.Namespace) -> int:
         for row in rows:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
 
-    print(json.dumps(report["summary"], indent=2, sort_keys=True))
-    return 0 if report["summary"]["gate_passed"] else 2
+    print(
+        json.dumps(
+            {
+                "equivalence": report["summary"],
+                "memory": report["memory"],
+                "gate_passed": report["gate_passed"],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report["gate_passed"] else 2

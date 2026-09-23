@@ -1,4 +1,4 @@
-"""Learned scalar readout head backend for candidate scoring (ADR-07).
+"""Experimental scalar readout head backend for candidate scoring.
 
 Decouples scoring from vocabulary token unigram frequency and single-token label
 constraints by projecting the backbone's last-token hidden representation into an
@@ -48,7 +48,7 @@ class ScalarReadoutHead:
 
 
 class HuggingFaceScalarHeadBackend:
-    """Evaluates candidate options via a learned scalar head instead of vocabulary logits."""
+    """Evaluates candidate options via a scalar projection instead of vocabulary logits."""
 
     def __init__(
         self,
@@ -56,16 +56,31 @@ class HuggingFaceScalarHeadBackend:
         revision: str,
         *,
         device: str = "cuda",
+        precision: str = "bfloat16",
         adapter_dir: str | Path | None = None,
         head_path: str | Path | None = None,
     ) -> None:
         import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoModelForMultimodalLM, AutoTokenizer
+
+        precision_dtypes = {
+            "bfloat16": torch.bfloat16,
+            "float16": torch.float16,
+            "float32": torch.float32,
+        }
+        if precision not in precision_dtypes:
+            raise ValueError(f"unsupported inference precision: {precision}")
+        dtype = precision_dtypes[precision] if device == "cuda" else torch.float32
 
         if device == "cuda":
             if not torch.cuda.is_available():
                 raise RuntimeError("CUDA was requested but torch.cuda.is_available() is false")
-            torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+            if precision == "bfloat16":
+                torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+            elif precision == "float16":
+                torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
+            elif precision == "float32":
+                torch.backends.cuda.matmul.allow_tf32 = False
 
         self.torch = torch
         self.device = torch.device(device)
@@ -73,10 +88,10 @@ class HuggingFaceScalarHeadBackend:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        self.model = AutoModelForCausalLM.from_pretrained(
+        self.model = AutoModelForMultimodalLM.from_pretrained(
             model_id,
             revision=revision,
-            dtype=torch.bfloat16 if device == "cuda" else torch.float32,
+            dtype=dtype,
             low_cpu_mem_usage=True,
         ).to(self.device)
 
@@ -94,12 +109,16 @@ class HuggingFaceScalarHeadBackend:
             state = torch.load(effective_head_path, map_location=self.device)
             self.head.load_state_dict(state)
         else:
-            # Contrastive zero-shot initialization from Yes/No tokens
+            # This contrast initialization is zero-shot, not a trained task head.
             yes_id = self.tokenizer.encode("Yes", add_special_tokens=False)
             no_id = self.tokenizer.encode("No", add_special_tokens=False)
             if len(yes_id) == 1 and len(no_id) == 1:
                 emb = self.model.get_input_embeddings().weight
                 self.head.initialize_from_contrast(emb[yes_id[0]], emb[no_id[0]])
+            else:
+                raise ValueError(
+                    "scalar head requires a saved head when Yes/No are not single tokens"
+                )
 
         # Optional LoRA adapter injection
         if self.adapter_dir:
@@ -116,11 +135,16 @@ class HuggingFaceScalarHeadBackend:
 
     def _candidate_prompts(self, question: CompiledQuestion) -> list[str]:
         """Construct candidate-specific evaluation prompts from question context."""
-        # For each option, append the option description as the completion hypothesis
+        # Score each option as an explicit hypothesis, including its description.
         prompts = []
         base_prompt = question.prompt
-        for opt_id, label in zip(question.option_ids, question.labels, strict=True):
-            prompts.append(f"{base_prompt} [{label}] {opt_id}")
+        for opt_id, label, description in zip(
+            question.option_ids,
+            question.labels,
+            question.option_descriptions,
+            strict=True,
+        ):
+            prompts.append(f"{base_prompt}\nCANDIDATE_HYPOTHESIS: [{label}] {opt_id}: {description}")
         return prompts
 
     def score(
@@ -133,9 +157,13 @@ class HuggingFaceScalarHeadBackend:
             prompts,
             return_tensors="pt",
             padding=True,
-            truncation=True,
-            max_length=question.input_tokens or 8192,
+            truncation=False,
         )
+        max_positions = getattr(self.model.config, "max_position_embeddings", None)
+        if max_positions is not None and encoded["input_ids"].shape[1] > max_positions:
+            raise ValueError(
+                "candidate hypothesis exceeds the model context window; refusing silent truncation"
+            )
         encoded = {k: v.to(self.device) for k, v in encoded.items()}
 
         if self.device.type == "cuda":
@@ -170,12 +198,16 @@ class HuggingFaceScalarHeadBackend:
         peak_vram = (
             torch.cuda.max_memory_allocated(self.device) if self.device.type == "cuda" else 0
         )
+        peak_vram_reserved = (
+            torch.cuda.max_memory_reserved(self.device) if self.device.type == "cuda" else 0
+        )
         total_tokens = int(encoded["attention_mask"].sum().item())
 
         return InferenceMeasurement(
             decision=decision,
-            label_mass=1.0,  # Scalar head has full normalized mass over options
+            label_mass=None,  # Candidate-normalized scores are not vocabulary label mass.
             inference_ms=inference_ms,
             input_tokens=total_tokens,
             peak_vram_bytes=peak_vram,
+            peak_vram_reserved_bytes=peak_vram_reserved,
         )

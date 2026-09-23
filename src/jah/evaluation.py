@@ -90,7 +90,19 @@ def load_backend(name: str, model_config: dict, adapter_dir: str | Path | None =
             model_config["model_id"],
             model_config["revision"],
             device=model_config["device"],
+            precision=model_config.get("precision", "bfloat16"),
             adapter_dir=adapter_dir,
+        )
+    elif name == "scalar-head":
+        from jah.backends.scalar_head import HuggingFaceScalarHeadBackend
+
+        return HuggingFaceScalarHeadBackend(
+            model_config["model_id"],
+            model_config["revision"],
+            device=model_config["device"],
+            adapter_dir=adapter_dir,
+            head_path=kwargs.get("head_path"),
+            precision=model_config.get("precision", "bfloat16"),
         )
     elif name == "generative":
         from jah.backends.generative import HuggingFaceGenerativeBackend
@@ -173,7 +185,12 @@ def run_evaluation(args: argparse.Namespace) -> int:
     model_path = root / args.model_config
     model_config = load_yaml(model_path)
     adapter_dir = getattr(args, "adapter_dir", None)
-    backend = load_backend(args.backend, model_config, adapter_dir)
+    backend = load_backend(
+        args.backend,
+        model_config,
+        adapter_dir,
+        head_path=getattr(args, "head_path", None),
+    )
 
     profiles_dir_arg = getattr(args, "profiles_dir", None)
     profiles = {}
@@ -968,7 +985,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--suite-config", default="configs/evals/public-suite.yaml")
     run.add_argument("--split-seed", default="jah-public-v1")
     run.add_argument("--model-config", default="configs/models/qwen3.5-4b.yaml")
-    run.add_argument("--backend", choices=("direct", "generative"), required=True)
+    run.add_argument("--backend", choices=("direct", "generative", "scalar-head"), required=True)
     run.add_argument(
         "--split",
         choices=("train", "development", "calibration", "locked_test", "task_holdout"),
@@ -977,6 +994,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--profiles-dir", default="configs/profiles/public")
     run.add_argument("--use-workload-profiles", action="store_true", default=False)
     run.add_argument("--adapter-dir", default=None, help="Optional path to LoRA adapter bundle")
+    run.add_argument("--head-path", default=None, help="Optional trained scalar-head weights")
     run.add_argument("--workload", default=None, help="Optional workload filter")
     run.add_argument("--max-examples", type=int, default=None, help="Optional limit on evaluated examples")
     run.add_argument("--output", required=True)
@@ -1014,8 +1032,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     equivalence.add_argument("--profiles-dir", default="configs/profiles/public")
     equivalence.add_argument("--adapter-dir", default=None)
     equivalence.add_argument("--microbatch-size", type=int, default=16)
+    equivalence.add_argument(
+        "--precision", choices=("bfloat16", "float16", "float32"), default=None,
+        help="Override model-config precision for controlled numerical experiments",
+    )
     equivalence.add_argument("--disable-prefix-cache", action="store_true", default=False)
-    equivalence.add_argument("--margin-threshold", type=float, default=2.80, help="Top-1 logit margin threshold for tie band (default 2.80 derived from empirical BF16 GEMM variance)")
+    equivalence.add_argument(
+        "--margin-threshold",
+        type=float,
+        default=2.80,
+        help="Diagnostic top-1 logit margin threshold; all decisions remain gated",
+    )
     equivalence.add_argument("--output", default="artifacts/m3/equivalence.json")
     equivalence.add_argument("--rows", default="artifacts/m3/equivalence.jsonl")
     equivalence.add_argument("--throttle-ms", type=float, default=5.0)

@@ -140,10 +140,11 @@ def ensemble_cyclic_logits(
     temperature: float = 1.0,
     option_values: tuple[float, ...] | None = None,
 ) -> tuple[ScoredDecision, float]:
-    """Combine logits from base and rotated candidate passes to eliminate order bias.
+    """Combine logits from base and one rotated candidate pass.
 
     Averages aligned logits per option ID and computes maximum absolute probability
-    discrepancy across rotations as an indicator of order instability.
+    discrepancy across rotations as an indicator of order sensitivity. This two-order
+    ensemble is not a guarantee that positional bias is eliminated.
     """
     if not decision_r0.logits or not decision_r1.logits:
         raise ValueError("both decisions must include raw logits for cyclic ensembling")
@@ -173,12 +174,14 @@ def debias_null_prior(
     prior_logits: dict[str, float],
     beta: float = 1.0,
 ) -> dict[str, float]:
-    """Subtract unconditioned prior logits to cancel unigram label token frequency bias.
+    """Experimental helper: subtract unconditioned prior logits from label logits.
 
     z_debiased = z - beta * z_0
+
+    Not called by the decision engine. Integration requires task-level evaluation of the
+    context-free prompt construction, beta selection, and calibration impact.
     """
     return {
         opt_id: logits[opt_id] - (beta * prior_logits.get(opt_id, 0.0))
         for opt_id in logits
     }
-
