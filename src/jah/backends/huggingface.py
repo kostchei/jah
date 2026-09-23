@@ -141,6 +141,16 @@ class HuggingFaceDirectLogitBackend:
         if len(questions) == 1:
             return [self.score(questions[0], temperature=temperature)]
 
+        # Recurrent/linear-attention layers carry state across sequence chunks. Splitting
+        # a full prompt into a cached prefix and question suffix changes the numerical
+        # execution path (and can materially change option probabilities) for these
+        # architectures. Keep their batch API exact by scoring each complete prompt,
+        # matching the reference path. This is an architecture-specific safety fallback;
+        # ordinary attention models may still use prefix reuse and microbatching below.
+        layer_types = getattr(getattr(self.model, "config", None), "layer_types", ())
+        if any("linear_attention" in str(layer_type) for layer_type in layer_types):
+            return [self.score(question, temperature=temperature) for question in questions]
+
         if use_prefix_cache and can_extract_prefix(questions):
             return score_with_prefix_cache(
                 self.model,

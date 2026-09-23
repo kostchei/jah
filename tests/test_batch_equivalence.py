@@ -94,6 +94,25 @@ def test_prefix_extraction_single_question_returns_false():
     assert can_extract_prefix(compiled) is False
 
 
+def test_recurrent_attention_backend_uses_full_prompt_singletons() -> None:
+    from types import SimpleNamespace
+
+    from jah.backends.huggingface import HuggingFaceDirectLogitBackend
+
+    backend = object.__new__(HuggingFaceDirectLogitBackend)
+    backend.model = SimpleNamespace(
+        config=SimpleNamespace(layer_types=["full_attention", "linear_attention"])
+    )
+    backend.score = lambda question, *, temperature=1.0: (question, temperature)
+
+    questions = [object(), object()]
+    results = backend.score_batch(
+        questions, temperature=0.7, microbatch_size=16, use_prefix_cache=True
+    )
+
+    assert results == [(questions[0], 0.7), (questions[1], 0.7)]
+
+
 def test_engine_delegates_to_score_batch():
     class BatchingBackend(FakeBackend):
         batch_called = False

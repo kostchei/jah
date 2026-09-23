@@ -2,8 +2,10 @@ param(
     [ValidateSet("bfloat16", "float16", "float32")]
     [string]$Precision = "bfloat16",
     [ValidateRange(1, 16)]
-    [int]$MicrobatchSize = 16,
-    [switch]$DisablePrefixCache
+    [int]$MicrobatchSize = 1,
+    [ValidateRange(0.1, 1.0)]
+    [double]$ResourceLimit = 0.85,
+    [switch]$EnablePrefixCache
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,7 +28,7 @@ if ($gpuUtilization -gt 30 -or $freeMemoryMiB -lt $minimumFreeMemoryMiB) {
 $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
 $uniqueSuffix = [Guid]::NewGuid().ToString("N").Substring(0, 8)
 $runName = "${stamp}-${Precision}-mb${MicrobatchSize}-${uniqueSuffix}"
-if ($DisablePrefixCache) {
+if (-not $EnablePrefixCache) {
     $runName += "-no-prefix"
 }
 $outputDirectory = Join-Path "artifacts/m3/runs" $runName
@@ -39,12 +41,12 @@ $arguments = @(
     "--model-config", "configs/models/qwen3.5-4b.yaml",
     "--precision", $Precision,
     "--microbatch-size", "$MicrobatchSize",
-    "--resource-limit", "0.95",
+    "--resource-limit", "$ResourceLimit",
     "--throttle-ms", "5",
     "--output", (Join-Path $outputDirectory "equivalence.json"),
     "--rows", (Join-Path $outputDirectory "equivalence.jsonl")
 )
-if ($DisablePrefixCache) {
+if (-not $EnablePrefixCache) {
     $arguments += "--disable-prefix-cache"
 }
 
