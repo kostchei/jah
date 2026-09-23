@@ -77,6 +77,7 @@ class EvaluateRequest(StrictModel):
     state: str | dict[str, Any] | list[Any]
     questions: Annotated[dict[Identifier, Question], Field(min_length=1, max_length=32)]
     profile: Identifier | None = None
+    order_debias_passes: Annotated[int, Field(ge=1, le=2)] = 1
 
     @field_validator("state")
     @classmethod
@@ -93,6 +94,7 @@ Disposition = Literal["review", "accept"]
 class AnswerBase(StrictModel):
     calibration_status: CalibrationStatus
     disposition: Disposition
+    order_discrepancy: float | None = None
 
 
 class BooleanAnswer(AnswerBase):

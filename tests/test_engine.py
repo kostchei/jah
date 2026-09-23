@@ -274,3 +274,27 @@ def test_unvalidated_evidence_forces_review(
     assert response.answers == raw_response.answers
     assert all(answer.disposition == "review" for answer in response.answers.values())
     assert all(answer.calibration_status == "uncalibrated" for answer in response.answers.values())
+
+
+def test_engine_order_debias_two_passes() -> None:
+    class TrackingBackend(FakeBackend):
+        def __init__(self):
+            self.calls = []
+
+        def score(self, question):
+            self.calls.append(question)
+            return super().score(question)
+
+    backend = TrackingBackend()
+    engine = DecisionEngine(backend, EngineConfig(artifact_id="test-artifact"))
+    request = make_request().model_copy(update={"order_debias_passes": 2})
+
+    response = engine.evaluate(request)
+    # 3 questions in original pass + 3 questions in rotated pass = 6 calls
+    assert len(backend.calls) == 6
+    # Choice answer has order_discrepancy computed
+    assert response.answers["route"].order_discrepancy is not None
+    assert isinstance(response.answers["route"].order_discrepancy, float)
+    # Usage accounts for both passes
+    assert response.usage.processed_input_tokens == 60
+

@@ -131,3 +131,54 @@ def label_probability_mass(final_logits, label_token_ids: tuple[int, ...]) -> fl
     indices = torch.tensor(label_token_ids, dtype=torch.long, device=final_logits.device)
     probabilities = torch.softmax(final_logits.to(dtype=torch.float32), dim=-1)
     return float(probabilities.index_select(-1, indices).sum().item())
+
+
+def ensemble_cyclic_logits(
+    decision_r0: ScoredDecision,
+    decision_r1: ScoredDecision,
+    *,
+    temperature: float = 1.0,
+    option_values: tuple[float, ...] | None = None,
+) -> tuple[ScoredDecision, float]:
+    """Combine logits from base and rotated candidate passes to eliminate order bias.
+
+    Averages aligned logits per option ID and computes maximum absolute probability
+    discrepancy across rotations as an indicator of order instability.
+    """
+    if not decision_r0.logits or not decision_r1.logits:
+        raise ValueError("both decisions must include raw logits for cyclic ensembling")
+    if set(decision_r0.logits.keys()) != set(decision_r1.logits.keys()):
+        raise ValueError("option IDs between rotations must match")
+
+    delta_order = max(
+        abs(decision_r0.probabilities[opt_id] - decision_r1.probabilities[opt_id])
+        for opt_id in decision_r0.probabilities
+    )
+
+    averaged_logits = {
+        opt_id: 0.5 * (decision_r0.logits[opt_id] + decision_r1.logits[opt_id])
+        for opt_id in decision_r0.logits
+    }
+
+    ensembled = rescale_logits(
+        averaged_logits,
+        temperature=temperature,
+        option_values=option_values,
+    )
+    return ensembled, delta_order
+
+
+def debias_null_prior(
+    logits: dict[str, float],
+    prior_logits: dict[str, float],
+    beta: float = 1.0,
+) -> dict[str, float]:
+    """Subtract unconditioned prior logits to cancel unigram label token frequency bias.
+
+    z_debiased = z - beta * z_0
+    """
+    return {
+        opt_id: logits[opt_id] - (beta * prior_logits.get(opt_id, 0.0))
+        for opt_id in logits
+    }
+

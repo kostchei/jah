@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -10,6 +11,15 @@ from jah.schemas import BooleanQuestion, ChoiceQuestion, EvaluateRequest, ScoreQ
 
 LABELS = tuple(chr(ord("A") + index) for index in range(16))
 PROMPT_VERSION = "decision-prompt-v2"
+
+
+def normalize_nfc(text: str) -> str:
+    """Normalize text to Unicode Normalization Form C (NFC).
+
+    Essential for Southeast Asian languages (e.g. Vietnamese tone mark composition
+    and Thai character clusters) to prevent token fragmentation and boundary shifts.
+    """
+    return unicodedata.normalize("NFC", text)
 
 
 class Tokenizer(Protocol):
@@ -30,10 +40,11 @@ class CompiledQuestion:
 
 def canonicalize_state(state: str | dict[str, Any] | list[Any]) -> str:
     if isinstance(state, str):
-        return state
-    return json.dumps(
+        return normalize_nfc(state)
+    dumped = json.dumps(
         state, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")
     )
+    return normalize_nfc(dumped)
 
 
 def compile_request(
@@ -41,6 +52,7 @@ def compile_request(
     *,
     tokenizer: Tokenizer | None = None,
     max_input_tokens: int = 8_192,
+    rotation: int = 0,
 ) -> tuple[CompiledQuestion, ...]:
     state = canonicalize_state(request.state)
     compiled: list[CompiledQuestion] = []
@@ -48,21 +60,26 @@ def compile_request(
         if isinstance(question, BooleanQuestion):
             option_ids = ("false", "true")
             descriptions = (
-                "The proposition is false or is not supported by the supplied state.",
-                "The proposition is true and is supported by the supplied state.",
+                normalize_nfc("The proposition is false or is not supported by the supplied state."),
+                normalize_nfc("The proposition is true and is supported by the supplied state."),
             )
             option_values = None
-            question_text = question.proposition
+            question_text = normalize_nfc(question.proposition)
         elif isinstance(question, ChoiceQuestion):
-            option_ids = tuple(option.id for option in question.options)
-            descriptions = tuple(option.description for option in question.options)
+            opts = list(question.options)
+            if rotation and len(opts) > 1:
+                offset = rotation % len(opts)
+                opts = opts[offset:] + opts[:offset]
+            option_ids = tuple(option.id for option in opts)
+            descriptions = tuple(normalize_nfc(option.description) for option in opts)
             option_values = None
-            question_text = question.instructions
+            question_text = normalize_nfc(question.instructions)
         elif isinstance(question, ScoreQuestion):
-            option_ids = tuple(level.id for level in question.levels)
-            descriptions = tuple(level.description for level in question.levels)
-            option_values = tuple(level.value for level in question.levels)
-            question_text = question.instructions
+            levels = list(question.levels)
+            option_ids = tuple(level.id for level in levels)
+            descriptions = tuple(normalize_nfc(level.description) for level in levels)
+            option_values = tuple(level.value for level in levels)
+            question_text = normalize_nfc(question.instructions)
         else:  # pragma: no cover - discriminated schema makes this unreachable
             raise TypeError(f"unsupported question type: {type(question)!r}")
 

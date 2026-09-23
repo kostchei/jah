@@ -25,7 +25,7 @@ from jah.schemas import (
     Timing,
     Usage,
 )
-from jah.scoring import rescale_logits
+from jah.scoring import ensemble_cyclic_logits, rescale_logits
 
 
 class ScoringBackend(Protocol):
@@ -67,6 +67,7 @@ class DecisionEngine:
         )
 
         measurements = []
+        measurements_r1 = []
         try:
             if (
                 not self.config.force_sequential
@@ -83,12 +84,35 @@ class DecisionEngine:
             else:
                 for question in compiled:
                     measurements.append(self.backend.score(question))
+
+            if request.order_debias_passes == 2:
+                compiled_r1 = compile_request(
+                    request,
+                    tokenizer=self.backend.tokenizer,
+                    max_input_tokens=self.config.maximum_input_tokens,
+                    rotation=1,
+                )
+                if (
+                    not self.config.force_sequential
+                    and hasattr(self.backend, "score_batch")
+                    and len(compiled_r1) > 1
+                ):
+                    measurements_r1 = list(
+                        self.backend.score_batch(
+                            compiled_r1,
+                            microbatch_size=self.config.microbatch_size,
+                            use_prefix_cache=self.config.enable_prefix_cache,
+                        )
+                    )
+                else:
+                    for question in compiled_r1:
+                        measurements_r1.append(self.backend.score(question))
         except InferenceUnavailableError:
             raise
         except Exception as exc:
             raise InferenceUnavailableError("inference failed before the atomic response") from exc
         answers = {}
-        for question, measurement in zip(compiled, measurements, strict=True):
+        for idx, (question, measurement) in enumerate(zip(compiled, measurements, strict=True)):
             profile = self.config.profiles.get(request.profile) if request.profile else None
             is_validated = False
             if profile is not None and has_validated_evidence(profile):
@@ -105,6 +129,16 @@ class DecisionEngine:
                 )
 
             decision = measurement.decision
+            order_discrepancy = None
+            if measurements_r1 and idx < len(measurements_r1):
+                meas_r1 = measurements_r1[idx]
+                if decision.logits and meas_r1.decision.logits and question.primitive == "choice":
+                    decision, order_discrepancy = ensemble_cyclic_logits(
+                        decision,
+                        meas_r1.decision,
+                        option_values=question.option_values,
+                    )
+
             if is_validated and profile is not None:
                 if decision.logits and (profile.temperature != 1.0 or getattr(profile, "bias", None) is not None):
                     decision = rescale_logits(
@@ -118,6 +152,7 @@ class DecisionEngine:
                     profile.policy,
                     decision.probabilities,
                     question.primitive,
+                    order_discrepancy=order_discrepancy,
                 )
             else:
                 calibration_status = "uncalibrated"
@@ -132,6 +167,7 @@ class DecisionEngine:
                     probabilities=decision.probabilities,
                     calibration_status=calibration_status,
                     disposition=disposition,
+                    order_discrepancy=order_discrepancy,
                 )
             elif question.primitive == "choice":
                 answers[question.question_id] = ChoiceAnswer(
@@ -140,6 +176,7 @@ class DecisionEngine:
                     probabilities=decision.probabilities,
                     calibration_status=calibration_status,
                     disposition=disposition,
+                    order_discrepancy=order_discrepancy,
                 )
             elif question.primitive == "score":
                 if decision.expected_value is None:
@@ -151,6 +188,7 @@ class DecisionEngine:
                     probabilities=decision.probabilities,
                     calibration_status=calibration_status,
                     disposition=disposition,
+                    order_discrepancy=order_discrepancy,
                 )
             else:  # pragma: no cover - compiler owns the primitive set
                 raise RuntimeError(f"unsupported compiled primitive: {question.primitive}")
@@ -159,7 +197,12 @@ class DecisionEngine:
         state_tokens = len(
             tokenizer.encode(canonicalize_state(request.state), add_special_tokens=False)
         )
-        inference_ms = sum(item.inference_ms for item in measurements)
+        total_input_tokens = sum(item.input_tokens for item in measurements) + sum(
+            item.input_tokens for item in measurements_r1
+        )
+        inference_ms = sum(item.inference_ms for item in measurements) + sum(
+            item.inference_ms for item in measurements_r1
+        )
         total_ms = (time.perf_counter() - started) * 1_000
         return EvaluateResponse(
             request_id=request_id or f"req_{uuid.uuid4().hex}",
@@ -168,7 +211,7 @@ class DecisionEngine:
             profile_id=request.profile,
             usage=Usage(
                 unique_state_tokens=state_tokens,
-                processed_input_tokens=sum(item.input_tokens for item in measurements),
+                processed_input_tokens=total_input_tokens,
                 decisions=len(measurements),
             ),
             timing_ms=Timing(queue=0.0, inference=inference_ms, total=total_ms),

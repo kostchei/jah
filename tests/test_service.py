@@ -40,6 +40,7 @@ def test_health_and_evaluate_contract() -> None:
             "probabilities": {"false": 0.25, "true": 0.75},
             "calibration_status": "uncalibrated",
             "disposition": "review",
+            "order_discrepancy": None,
         }
         assert body["usage"]["decisions"] == 1
 

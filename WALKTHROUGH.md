@@ -119,3 +119,16 @@ The default suite runs in a few seconds because it scores mocked tensors. Proper
 exist with real weights loaded — tokenizer label boundaries, last-token indexing, prefix-cache
 agreement, adapter attachment — live in the `gpu` tier
 ([tests/test_gpu_backend.py](tests/test_gpu_backend.py)).
+
+---
+
+## 6. SEA Adaptation, Tokenization Resilience & Order Debiasing (RFC 002)
+
+Delivered the Phase 2 enhancements covering Southeast Asian multilingual execution, tokenization stability, and order debiasing:
+* **RFC 002 Specification:** [RFC_002_SEA_ADAPTATION_AND_ORDER_DEBIASING.md](RFC_002_SEA_ADAPTATION_AND_ORDER_DEBIASING.md)
+* **NFC Unicode Normalization:** Prevents Vietnamese diacritic fragmentation and Thai character cluster drift in [`compiler.py`](src/jah/compiler.py).
+* **Cyclic Order Debiasing:** Adds `order_debias_passes: int = Field(default=1, ge=1, le=2)` in [`schemas.py`](src/jah/schemas.py), ensembling rotations to eliminate order bias and enforcing `max_order_discrepancy` in [`policy.py`](src/jah/policy.py).
+* **Dual-Mode Scalar Head:** Implemented [`HuggingFaceScalarHeadBackend`](src/jah/backends/scalar_head.py) (ADR-07) alongside direct-logits.
+* **SEA-LION Configurations:** Added [`configs/models/sealion-qwen-8b.yaml`](configs/models/sealion-qwen-8b.yaml) and [`configs/models/qwen3.5-4b-sea.yaml`](configs/models/qwen3.5-4b-sea.yaml).
+* **Automated Unit Tests:** [`tests/test_multilingual_compiler.py`](tests/test_multilingual_compiler.py) and [`tests/test_debiasing.py`](tests/test_debiasing.py) pass cleanly.
+

@@ -16,6 +16,7 @@ class AcceptancePolicy(StrictModel):
     type: Literal["threshold", "review_only"] = "threshold"
     threshold: Annotated[float, Field(ge=0.0, le=1.0)] = 0.5
     metric: Literal["max_probability", "margin"] = "max_probability"
+    max_order_discrepancy: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
 
     @field_validator("threshold")
     @classmethod
@@ -29,12 +30,21 @@ def evaluate_acceptance(
     policy: AcceptancePolicy,
     probabilities: dict[str, float],
     primitive: str,
+    *,
+    order_discrepancy: float | None = None,
 ) -> Disposition:
     """Evaluate whether calibrated probabilities meet the acceptance policy."""
     if policy.type == "review_only":
         return "review"
 
     if not probabilities:
+        return "review"
+
+    if (
+        order_discrepancy is not None
+        and policy.max_order_discrepancy is not None
+        and order_discrepancy > policy.max_order_discrepancy
+    ):
         return "review"
 
     if policy.metric == "max_probability":
