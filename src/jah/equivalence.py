@@ -293,10 +293,12 @@ def run_equivalence(args: argparse.Namespace) -> int:
         "artifact_id": model_config["artifact_id"],
         "model": model_metadata,
         "reference_path": "sequential full-prompt single-item scoring (ADR-02)",
-        "optimized_path": (
-            "shared-prefix reuse"
-            if not args.disable_prefix_cache
-            else "microbatching only (prefix reuse disabled)"
+        "optimized_path": getattr(
+            backend,
+            "batch_optimization_mode",
+            "full-prompt microbatch (prefix reuse disabled)"
+            if args.disable_prefix_cache
+            else "shared-prefix reuse or full-prompt microbatch",
         ),
         "microbatch_size": args.microbatch_size,
         "regression_set": {

@@ -103,6 +103,9 @@ def test_recurrent_attention_backend_uses_full_prompt_singletons() -> None:
     backend.model = SimpleNamespace(
         config=SimpleNamespace(layer_types=["full_attention", "linear_attention"])
     )
+    backend.batch_optimization_mode = (
+        "sequential full-prompt fallback for recurrent/linear-attention model"
+    )
     backend.score = lambda question, *, temperature=1.0: (question, temperature)
 
     questions = [object(), object()]

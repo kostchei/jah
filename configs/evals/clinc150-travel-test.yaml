@@ -1,0 +1,9 @@
+schema_version: 1
+suite_id: clinc150-travel-test-v1
+dataset: evals/cache/clinc150/clinc150-travel-test.jsonl
+minimum_decisions: 1000
+required_primitives: [choice]
+required_annotation_status: [upstream-human]
+split_seed: clinc150-test-v1
+purpose: external-heldout-benchmark-only
+production_release_approved: false

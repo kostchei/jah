@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "suite_id": "clinc150-travel-test-v1",
+  "source": {
+    "dataset": "CLINC150",
+    "download_url": "https://archive.ics.uci.edu/static/public/570/clinc150.zip",
+    "archive_sha256": "0d8ecc3e1edd7b25cabde0177544ce536ddf773844bc80ef1a75f36e7f030ea2",
+    "member": "clinc150_uci/data_full.json",
+    "member_sha256": "36923c3705a59e08fe9c3883d8bc2dd966ef93e22cb78ac41171782a698d56e0",
+    "license_note": "UCI page says CC BY 4.0; the archive's included LICENSE says CC BY 3.0. Treat as CC BY 3.0 unless resolved with the source.",
+    "used_partitions": ["test", "oos_test"],
+    "train_dev_use": "Only checked for exact normalized utterance overlap; never included as evaluation rows."
+  },
+  "adapter": "scripts/prepare_clinc150_travel_test.py",
+  "subset": {
+    "mapping": "15 canonical CLINC150 travel intents; small-talk and OOS map to other.",
+    "travel_test_decisions": 450,
+    "small_talk_test_decisions": 449,
+    "oos_test_decisions": 1000,
+    "exact_train_dev_overlaps_excluded": 2,
+    "total_decisions": 1899,
+    "choice_options": 16
+  },
+  "prepared_data": {
+    "path_ignored_by_git": "evals/cache/clinc150/clinc150-travel-test.jsonl",
+    "sha256": "b3d01d10956acc1cd292ac8199546349b1984b33a9bc0f968e0bd22444944359",
+    "split": "locked_test",
+    "split_seed": "clinc150-test-v1",
+    "assignment_sha256": "561444f8d0ae9784e4e6d9e9f07473cb5444be9fd060a272c4a3fead7002063b",
+    "readiness": true,
+    "release_annotation_ready": false
+  },
+  "equivalence_fixture": {
+    "path_ignored_by_git": "evals/cache/clinc150/equivalence-requests",
+    "seed": "clinc150-fresh-equivalence-v1",
+    "requests": 100,
+    "decisions": 200
+  },
+  "quality_evaluation": "Not yet run; run the documented direct evaluation after the GPU is available."
+}

@@ -118,29 +118,33 @@ def load_backend(name: str, model_config: dict, adapter_dir: str | Path | None =
 
 def _load_suite_validation_params(
     root: Path, suite_config_path: str | None
-) -> tuple[int, tuple[str, ...] | None]:
+) -> tuple[int, tuple[str, ...] | None, tuple[str, ...]]:
     if not suite_config_path:
-        return 120, None
+        return 120, None, ("choice", "boolean", "score")
     path = root / suite_config_path
     if not path.exists():
-        return 120, None
+        return 120, None, ("choice", "boolean", "score")
     config = load_yaml(path)
     minimum_decisions = config.get("minimum_decisions", 120)
     allowed_statuses = config.get("required_annotation_status")
     if allowed_statuses is not None:
         allowed_statuses = tuple(allowed_statuses)
-    return minimum_decisions, allowed_statuses
+    required_primitives = tuple(config.get("required_primitives", ("choice", "boolean", "score")))
+    return minimum_decisions, allowed_statuses, required_primitives
 
 
 def run_evaluation(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     dataset_path = root / args.dataset
     examples = load_m1_dataset(dataset_path)
-    min_decisions, allowed_statuses = _load_suite_validation_params(
+    min_decisions, allowed_statuses, required_primitives = _load_suite_validation_params(
         root, getattr(args, "suite_config", None)
     )
     readiness = validate_m1_suite(
-        examples, minimum_decisions=min_decisions, allowed_statuses=allowed_statuses
+        examples,
+        minimum_decisions=min_decisions,
+        allowed_statuses=allowed_statuses,
+        required_primitives=required_primitives,
     )
     if not readiness["ready"]:
         raise ValueError("M1 suite is not ready: " + "; ".join(readiness["failures"]))
@@ -487,11 +491,14 @@ def validate_dataset(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     dataset_path = root / args.dataset
     examples = load_m1_dataset(dataset_path)
-    min_decisions, allowed_statuses = _load_suite_validation_params(
+    min_decisions, allowed_statuses, required_primitives = _load_suite_validation_params(
         root, getattr(args, "suite_config", None)
     )
     readiness = validate_m1_suite(
-        examples, minimum_decisions=min_decisions, allowed_statuses=allowed_statuses
+        examples,
+        minimum_decisions=min_decisions,
+        allowed_statuses=allowed_statuses,
+        required_primitives=required_primitives,
     )
     manifest = build_split_manifest(
         examples,
@@ -621,11 +628,14 @@ def run_calibration(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     dataset_path = root / args.dataset
     examples = load_m1_dataset(dataset_path)
-    min_decisions, allowed_statuses = _load_suite_validation_params(
+    min_decisions, allowed_statuses, required_primitives = _load_suite_validation_params(
         root, getattr(args, "suite_config", None)
     )
     readiness = validate_m1_suite(
-        examples, minimum_decisions=min_decisions, allowed_statuses=allowed_statuses
+        examples,
+        minimum_decisions=min_decisions,
+        allowed_statuses=allowed_statuses,
+        required_primitives=required_primitives,
     )
     if not readiness["ready"]:
         raise ValueError("M1 suite is not ready: " + "; ".join(readiness["failures"]))

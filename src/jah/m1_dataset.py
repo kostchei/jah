@@ -220,6 +220,7 @@ def validate_m1_suite(
     *,
     minimum_decisions: int = 1_000,
     allowed_statuses: tuple[str, ...] | None = None,
+    required_primitives: tuple[str, ...] = ("choice", "boolean", "score"),
 ) -> dict:
     if allowed_statuses is None:
         allowed_statuses = (
@@ -237,7 +238,11 @@ def validate_m1_suite(
     failures = []
     if decisions < minimum_decisions:
         failures.append(f"needs at least {minimum_decisions} decisions; found {decisions}")
-    for primitive in ("choice", "boolean", "score"):
+    supported_primitives = {"choice", "boolean", "score"}
+    unknown_primitives = set(required_primitives) - supported_primitives
+    if unknown_primitives:
+        raise ValueError(f"unsupported required primitives: {sorted(unknown_primitives)}")
+    for primitive in required_primitives:
         if primitive_counts[primitive] == 0:
             failures.append(f"suite contains no {primitive} decisions")
     disallowed = sum(

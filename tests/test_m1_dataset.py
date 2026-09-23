@@ -91,6 +91,16 @@ def test_suite_gate_reports_missing_size_and_primitives() -> None:
     assert any("no score" in failure for failure in status["failures"])
 
 
+def test_suite_can_require_only_primitives_in_a_single_task_benchmark() -> None:
+    status = validate_m1_suite(
+        [M1Example.model_validate(example_payload())],
+        minimum_decisions=1,
+        required_primitives=("choice",),
+    )
+    assert status["ready"] is True
+    assert status["release_annotation_ready"] is False
+
+
 def test_source_and_near_duplicate_components_never_cross_splits() -> None:
     first = M1Example.model_validate(example_payload(1, source="source-a", cluster="cluster-x"))
     second = M1Example.model_validate(example_payload(2, source="source-b", cluster="cluster-x"))

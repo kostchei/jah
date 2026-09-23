@@ -5,10 +5,14 @@ param(
     [int]$MicrobatchSize = 1,
     [ValidateRange(0.1, 1.0)]
     [double]$ResourceLimit = 0.85,
+    [string]$Requests = "evals/fixtures/equivalence",
     [switch]$EnablePrefixCache
 )
 
 $ErrorActionPreference = "Stop"
+if (-not (Test-Path -LiteralPath $Requests -PathType Container)) {
+    throw "Request directory does not exist: $Requests"
+}
 $gpuStats = & nvidia-smi --query-gpu=utilization.gpu,memory.free --format=csv,noheader,nounits
 if ($LASTEXITCODE -ne 0 -or -not $gpuStats) {
     throw "Could not read GPU utilization and free memory; refusing to start evaluation."
@@ -38,6 +42,7 @@ $arguments = @(
     "-m", "jah.evaluation",
     "--root", ".",
     "equivalence",
+    "--requests", $Requests,
     "--model-config", "configs/models/qwen3.5-4b.yaml",
     "--precision", $Precision,
     "--microbatch-size", "$MicrobatchSize",

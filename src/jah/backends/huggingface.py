@@ -68,6 +68,12 @@ class HuggingFaceDirectLogitBackend:
             dtype=dtype,
             low_cpu_mem_usage=True,
         ).to(self.device)
+        layer_types = getattr(getattr(self.model, "config", None), "layer_types", ())
+        self.batch_optimization_mode = (
+            "sequential full-prompt fallback for recurrent/linear-attention model"
+            if any("linear_attention" in str(layer_type) for layer_type in layer_types)
+            else "prefix-cache or full-prompt microbatch"
+        )
 
         self.adapter_dir = Path(adapter_dir).resolve() if adapter_dir else None
         self.lora_modules = None
@@ -147,8 +153,7 @@ class HuggingFaceDirectLogitBackend:
         # architectures. Keep their batch API exact by scoring each complete prompt,
         # matching the reference path. This is an architecture-specific safety fallback;
         # ordinary attention models may still use prefix reuse and microbatching below.
-        layer_types = getattr(getattr(self.model, "config", None), "layer_types", ())
-        if any("linear_attention" in str(layer_type) for layer_type in layer_types):
+        if "sequential full-prompt fallback" in self.batch_optimization_mode:
             return [self.score(question, temperature=temperature) for question in questions]
 
         if use_prefix_cache and can_extract_prefix(questions):
